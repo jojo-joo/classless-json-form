@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Classless JSON Form</title>
+  <link rel="stylesheet" href="pico.css">
+
+  <style>
+    :where(body > :is(header, main, footer)) {
+        box-sizing: border-box;
+        width: 100%;
+        margin: 0 auto;
+        padding: 0 16px;
+
+        @media (min-width: 576px)  { width: min(100% - 32px, 540px); }
+        @media (min-width: 768px)  { width: min(100% - 48px, 720px); }
+        @media (min-width: 1024px) { width: min(50%, 2048px); }
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      column-gap: 16px;
+      row-gap: 8px;
+      align-items: center;
+    }
+
+    form>row {
+      display: contents;
+    }
+
+    form>row>label,
+    form>row>input,
+    form>row>select {
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
+    form>row>label {
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: end;
+      align-items: center;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 空架子：可见内容全部由 cjf.js 生成 -->
+  <main></main>
+
+  <!-- 测试用 JSON Schema（2020-12）；x-* 是展示层提示关键字，校验器会忽略 -->
+  <script type="application/json" id="person-schema">
+  {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://example.org/cjf/person.schema.json",
+    "title": "Person",
+    "type": "object",
+    "required": ["name", "age", "date", "favorite_color", "gender", "location", "pets"],
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Name",
+        "description": "First and Last name",
+        "minLength": 4,
+        "default": "Jeremy Dorn"
+      },
+      "age": {
+        "type": "integer",
+        "title": "Age",
+        "minimum": 18,
+        "maximum": 99,
+        "default": 25
+      },
+      "favorite_color": {
+        "type": "string",
+        "title": "Favorite color",
+        "x-widget": "color",
+        "default": "#ffa500"
+      },
+      "gender": {
+        "type": "boolean",
+        "title": "Gender",
+        "x-widget": "switch"
+      },
+      "date": {
+        "type": "string",
+        "title": "Date",
+        "format": "date",
+        "x-options": { "flatpickr": {} }
+      },
+      "location": {
+        "type": "object",
+        "title": "Location",
+        "properties": {
+          "city": {
+            "type": "string",
+            "title": "City",
+            "default": "San Francisco"
+          },
+          "state": {
+            "type": "string",
+            "title": "State",
+            "default": "CA"
+          },
+          "citystate": {
+            "type": "string",
+            "title": "City/State",
+            "description": "This is generated automatically from the previous two fields",
+            "readOnly": true,
+            "x-template": "{{city}}, {{state}}",
+            "x-watch": {
+              "city": "location.city",
+              "state": "location.state"
+            }
+          }
+        }
+      },
+      "pets": {
+        "type": "array",
+        "title": "Pets",
+        "uniqueItems": true,
+        "x-widget": "table",
+        "items": {
+          "type": "object",
+          "title": "Pet",
+          "properties": {
+            "type": {
+              "type": "string",
+              "title": "Type",
+              "enum": ["cat", "dog", "bird", "reptile", "other"],
+              "default": "dog"
+            },
+            "name": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        },
+        "default": [{ "type": "dog", "name": "Walter" }]
+      }
+    }
+  }
+  </script>
+
+  <script src="cjf.js"></script>
+  <script>
+    CJF.render(document.querySelector('main'), JSON.parse(document.getElementById('person-schema').textContent));
+  </script>
+</body>
+
+</html>
