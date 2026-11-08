@@ -13,6 +13,10 @@
  *   x-api-addr POST target of an x-format:button (JSON body = form values)
  *   x-disabled, x-placeholder
  *   x-template / x-watch   computed read-only field
+ *
+ * The "format" keyword is NOT read here: it is a validation keyword, checked in
+ * the backend. Use x-format to pick a widget; format: "email" alone still
+ * renders a plain text input.
  */
 (function (win, doc) {
   'use strict';
@@ -310,16 +314,10 @@
 
   /* --------------------------------------------- 4. dispatch + containers */
 
-  var FORMAT = {
-    date: 'date', time: 'time', 'date-time': 'datetime-local',
-    email: 'email', uri: 'uri'
-  };
-
   function control(p, path, ctx, a) {
     var xf = p['x-format'];
     if (p['x-template']) return computed(p, path, ctx);
     if (xf && W[xf]) return W[xf](p, path, ctx, a);
-    if (FORMAT[p.format]) return W[FORMAT[p.format]](p, path, ctx, a);
 
     var t = typeOf(p);
     if (t === 'boolean') return W.checkbox(p, path, ctx, a);
