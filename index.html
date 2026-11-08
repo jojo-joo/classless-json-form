@@ -83,10 +83,11 @@
     "$id": "https://example.org/cjf/demo.schema.json",
     "title": "Classless JSON Form",
     "type": "object",
+    "x-format": "accordion",
     "properties": {
-      "text": {
+      "String": {
         "type": "object",
-        "title": "Text",
+        "title": "String",
         "required": ["text"],
         "properties": {
           "text": {
@@ -156,9 +157,9 @@
           }
         }
       },
-      "choice": {
+      "Boolean": {
         "type": "object",
-        "title": "Choice",
+        "title": "Boolean",
         "properties": {
           "select": {
             "type": "string",
@@ -225,7 +226,7 @@
           }
         }
       },
-      "number": {
+      "Number": {
         "type": "object",
         "title": "Number",
         "properties": {
@@ -274,9 +275,9 @@
           }
         }
       },
-      "pets": {
+      "Array": {
         "type": "array",
-        "title": "Pets",
+        "title": "Array",
         "x-format": "table",
         "uniqueItems": true,
         "items": {
@@ -294,10 +295,9 @@
         },
         "default": [{ "type": "dog", "name": "Walter" }]
       },
-      "advanced": {
+      "Object": {
         "type": "object",
-        "title": "Advanced",
-        "x-format": "accordion",
+        "title": "Object",
         "properties": {
           "note": {
             "type": "string",

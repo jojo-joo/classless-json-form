@@ -336,29 +336,47 @@
     return inputHTML('text', path, p, { type: 'string' });
   }
 
-  function rowHTML(p, name, path, req, ctx) {
-    return '<row><label>' + esc(titleOf(p, name)) + '</label>' +
+  function rowHTML(p, name, path, req, ctx, noLabel) {
+    return '<row><label>' + (noLabel ? '' : esc(titleOf(p, name))) + '</label>' +
       control(p, path, ctx, { required: req }) + '</row>';
   }
 
-  /* object -> fieldset+legend, or details+summary with x-format:accordion */
+  /* object -> fieldset+legend */
   function objectHTML(p, name, path, ctx) {
-    var body = fields(p, path, ctx), title = esc(titleOf(p, name));
-    if (p['x-format'] === 'accordion') {
-      return '<details open><summary>' + title + '</summary>' + body + '</details>';
-    }
-    return '<fieldset><legend>' + title + '</legend>' + body + '</fieldset>';
+    return '<fieldset><legend>' + esc(titleOf(p, name)) + '</legend>' +
+      fields(p, path, ctx) + '</fieldset>';
   }
 
-  /* properties + if/then/else of one object schema */
+  /* one property rendered as an accordion panel (details+summary) */
+  function panelHTML(p, name, path, req, ctx, group, open) {
+    var body = typeOf(p) === 'object'
+      ? fields(p, path, ctx)
+      : rowHTML(p, name, path, req, ctx, true);
+    return '<details' + (open ? ' open' : '') + attr({ name: group }) + '>' +
+      '<summary>' + esc(titleOf(p, name)) + '</summary>' + body + '</details>';
+  }
+
+  /* properties + if/then/else of one object schema.
+     x-format: accordion on this object turns its properties into panels. */
   function fields(p, path, ctx) {
+    var accordion = p['x-format'] === 'accordion';
+    var group = 'cjf-accordion-' + (path || 'root');
+    var first = true;
     var html = '';
+
     each(p.properties || {}, function (name, sub) {
       var subPath = path ? path + '.' + name : name;
-      html += typeOf(sub) === 'object'
-        ? objectHTML(sub, name, subPath, ctx)
-        : rowHTML(sub, name, subPath, has(p.required, name), ctx);
+      var req = has(p.required, name);
+      if (!accordion) {
+        html += typeOf(sub) === 'object'
+          ? objectHTML(sub, name, subPath, ctx)
+          : rowHTML(sub, name, subPath, req, ctx);
+      } else {
+        html += panelHTML(sub, name, subPath, req, ctx, group, first);
+        first = false;
+      }
     });
+
     if (p['if'] && (p['then'] || p['else'])) {
       html += '<div' + attr({ 'data-if': path, 'data-then': true }) + '>' +
         (p['then'] ? fields(p['then'], path, ctx) : '') + '</div>';
@@ -542,6 +560,20 @@
     form.addEventListener('reset', function () {
       win.setTimeout(function () { refresh(form, ctx); }, 0);
     }, false);
+
+    /* exclusive accordion: opening one panel closes the others of its group.
+       "toggle" does not bubble, hence the capture listener; this also covers
+       browsers without support for the details[name] attribute. */
+    form.addEventListener('toggle', function (evt) {
+      var el = evt.target;
+      if (!el || el.tagName !== 'DETAILS' || !el.open) return;
+      var name = el.getAttribute('name');
+      if (!name) return;
+      var group = qa('details[name="' + name + '"]', form);
+      for (var i = 0; i < group.length; i++) {
+        if (group[i] !== el) group[i].open = false;
+      }
+    }, true);
   }
 
   /* --------------------------------------------------------------- 6. api */

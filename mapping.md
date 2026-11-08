@@ -17,7 +17,7 @@
 | type    | array   | checkboxes-inline | input["checkbox"] (inline) | Horizontal layout version of the checkboxes widget for more compact displays. |
 | type    | array   | table             | table | Renders array items in a tabular format. Items must be `type: object`. |
 | type    | object  |                   | fieldset+legend | The standard widget that renders a fieldset. |
-| type    | object  | accordion         | details+summary | Renders object properties as collapsible accordion panels. |
+| type    | object  | accordion         | details+summary | Puts `x-format: "accordion"` on the container object: each of its properties becomes one collapsible panel. Panels of a group share a `name`, so opening one closes the others; the first panel starts open. |
 | type    | string  |                   | input["text"] | The standard text input that appears for string types without specific requirements. |
 | type    | string  |  date             | input[type="date"] | Native date picker. |
 | type    | string  |  time             | input[type="time"] | Native time picker. |
@@ -35,10 +35,6 @@
 
 ## Notes
 
-- `format` is a validation keyword: it is checked in the backend and ignored
-  here. `{ "type": "string", "format": "email" }` alone still renders
-  `input[type="text"]`; add `x-format` to pick the widget, e.g.
-  `{ "format": "email", "x-format": "email" }`.
 - `x-format` accepts the widget names of the table above (`switch`, `select`,
   `range`, `button`, `radios`, `radios-inline`, `checkboxes-inline`, `table`,
   `accordion`, `date`, `time`, `date-time`, `email`, `uri`, `color`, `file`).
@@ -48,6 +44,9 @@
   HTML would force the box to be checked.
 - Array checkboxes keep the type of `items.type`, so a checked `integer` option
   is collected as a number.
+- `accordion` belongs to the container: put `x-format: "accordion"` on the
+  object whose members should become panels. The object itself is not a panel,
+  and each panel contains its member without a repeated label.
 
 ## Auxiliary keywords
 
