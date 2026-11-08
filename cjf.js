@@ -1,37 +1,36 @@
 /*!
- * cjf.js - classless JSON Form (minimal skeleton)
- * JSON Schema 2020-12 -> plain HTML form.  Browser only, zero dependencies, ES5.
+ * cjf.js v0.2 - classless JSON Form
+ * JSON Schema 2020-12 -> native HTML5 widgets. Browser only, zero dependency, ES5.
  *
- *   CJF.render(target, schema[, options])  -> <form>     // target: element or selector
+ *   CJF.render(target, schema[, options])  -> <form>   options: { onSubmit, request }
  *   CJF.collect(form)                      -> plain object
  *
- * UI hints (all optional, ignored by JSON Schema validators):
- *   x-widget   "color" | "switch" | "table"
- *   x-options  widget options, e.g. { "flatpickr": {} }   (skeleton: kept, not used)
- *   x-template "{{city}}, {{state}}"                       computed read-only field
- *   x-watch    { "city": "location.city", ... }            data paths feeding the template
+ * Widget selection follows mapping.md. UI hints (unknown to validators, safe):
+ *   x-format   switch | select | range | button | radios | radios-inline |
+ *              checkboxes-inline | table | accordion | color | file
+ *   x-enum     option labels: array parallel to enum, or { "value": "Label" }
+ *   x-label    label of an x-format:button
+ *   x-api-addr POST target of an x-format:button (JSON body = form values)
+ *   x-disabled, x-placeholder
+ *   x-template / x-watch   computed read-only field
  */
 (function (win, doc) {
   'use strict';
 
-  /* ------------------------------------------------------------------ helpers */
+  /* ------------------------------------------------------------- 1. helpers */
 
   function q(sel, root) { return (root || doc).querySelector(sel); }
   function qa(sel, root) { return (root || doc).querySelectorAll(sel); }
 
   function each(obj, fn) {
-    for (var key in obj) {
-      if (obj.hasOwnProperty(key)) fn(key, obj[key]);
-    }
+    for (var key in obj) { if (obj.hasOwnProperty(key)) fn(key, obj[key]); }
   }
 
   function isArr(v) { return Object.prototype.toString.call(v) === '[object Array]'; }
   function isObj(v) { return !!v && typeof v === 'object' && !isArr(v); }
 
   function has(list, v) {
-    for (var i = 0; list && i < list.length; i++) {
-      if (list[i] === v) return true;
-    }
+    for (var i = 0; list && i < list.length; i++) { if (list[i] === v) return true; }
     return false;
   }
 
@@ -41,255 +40,535 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  /* { a: 1, b: true, c: false, d: null } -> ' a="1" b' */
+  function attr(map) {
+    var out = '';
+    each(map, function (key, value) {
+      if (value === undefined || value === null || value === false || value === '') return;
+      out += value === true ? ' ' + key : ' ' + key + '="' + esc(value) + '"';
+    });
+    return out;
+  }
+
   function humanize(s) {
-    s = String(s).replace(/[_-]+/g, ' ');
+    s = String(s || '').replace(/[_-]+/g, ' ');
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
   function idOf(path) { return 'cjf-' + path.replace(/[^A-Za-z0-9]+/g, '-'); }
-  function widget(prop) { return prop['x-widget'] || prop.format || ''; }
 
-  /* computed fields and blank table rows, reset on every render (one form/page) */
-  var WATCH = [];
-  var TABLE = {};
-
-  /* ------------------------------------------------------------------ widgets */
-
-  var FORMAT = { 'date': 'date', 'time': 'time', 'date-time': 'datetime-local',
-    'email': 'email', 'uri': 'url', 'hostname': 'text', 'tel': 'tel' };
-
-  function input(path, prop, req) {
-    var type = widget(prop) === 'color' ? 'color' :
-      (prop.type === 'integer' || prop.type === 'number' ? 'number' : (FORMAT[prop.format] || 'text'));
-    var html = '<input type="' + type + '" id="' + idOf(path) + '" name="' + esc(path) + '"' +
-      ' data-type="' + esc(prop.type) + '"';
-    if (req) html += ' required';
-    if (prop.minLength) html += ' minlength="' + prop.minLength + '"';
-    if (prop.maxLength) html += ' maxlength="' + prop.maxLength + '"';
-    if (prop.pattern) html += ' pattern="' + esc(prop.pattern) + '"';
-    if (prop.minimum !== undefined) html += ' min="' + prop.minimum + '"';
-    if (prop.maximum !== undefined) html += ' max="' + prop.maximum + '"';
-    if (prop.type === 'integer' || prop.type === 'number') {
-      html += ' step="' + (prop.multipleOf || (prop.type === 'integer' ? 1 : 'any')) + '"';
+  function typeOf(p) {
+    if (p.type) return p.type;
+    if (p.properties) return 'object';
+    if (p.items) return 'array';
+    if (p.enum) {
+      var v = p.enum[0];
+      if (typeof v === 'number') return v % 1 === 0 ? 'integer' : 'number';
+      if (typeof v === 'boolean') return 'boolean';
     }
-    html += ' value="' + esc(prop['default']) + '"';
-    if (prop.description) html += ' title="' + esc(prop.description) + '"';
-    return html + '>';
+    return 'string';
   }
 
-  function checkbox(path, prop) {
-    /* a boolean is one checkbox; "required" is not enforceable the HTML way */
-    return '<input type="checkbox" role="switch" id="' + idOf(path) + '" name="' + esc(path) + '"' +
-      ' data-type="boolean"' + (prop['default'] === true ? ' checked' : '') + '>';
+  function parts(path) {
+    var out = [], re = /([^.[\]]+)|\[([0-9]+)\]/g, m;
+    while ((m = re.exec(String(path)))) {
+      out.push(m[2] === undefined ? m[1] : parseInt(m[2], 10));
+    }
+    return out;
   }
 
-  function select(path, prop, req, key) {
-    var html = '<select id="' + (key ? '' : idOf(path)) + '"' +
-      (key ? ' data-key="' + esc(key) + '"' : ' name="' + esc(path) + '"') +
-      ' data-type="' + esc(prop.type || 'string') + '"' + (req ? ' required' : '') + '>';
-    if (!key && prop['default'] === undefined) html += '<option value=""></option>';
-    for (var i = 0; i < prop.enum.length; i++) {
-      var v = prop.enum[i];
-      html += '<option' + (key ? '' : ' value="' + esc(v) + '"') +
-        (prop['default'] === v ? ' selected' : '') + '>' + esc(v) + '</option>';
+  function get(obj, path) {
+    var ps = parts(path), o = obj;
+    for (var i = 0; i < ps.length; i++) {
+      if (o === null || o === undefined) return undefined;
+      o = o[ps[i]];
+    }
+    return o;
+  }
+
+  function set(obj, path, value) {
+    var ps = parts(path), o = obj;
+    for (var i = 0; i < ps.length - 1; i++) {
+      var key = ps[i];
+      if (!o[key] || typeof o[key] !== 'object') {
+        o[key] = typeof ps[i + 1] === 'number' ? [] : {};
+      }
+      o = o[key];
+    }
+    if (ps.length) o[ps[ps.length - 1]] = value;
+  }
+
+  function cast(value, type) {
+    if (type === 'boolean') return value === true || value === 'true';
+    if (type === 'number' || type === 'integer') return value === '' ? undefined : Number(value);
+    return value;
+  }
+
+  function titleOf(p, name) { return p.title || humanize(name); }
+
+  /* --------------------------------------------------- 2. shared html pieces */
+
+  /* enum + x-enum -> [{ v: value, l: label }] ; also serves boolean true/false
+     and array items (items.enum). Used by select, radios, checkboxes, table. */
+  function options(p) {
+    var item = p.items || {};
+    var list = p.enum || item.enum;
+    var labels = p['x-enum'] || item['x-enum'];
+    if (!list) {
+      /* boolean: false first, so x-enum[0] labels false and x-enum[1] labels true */
+      if (typeOf(p) === 'boolean') list = [false, true];
+      else return [];
+    }
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+      out.push({ v: list[i], l: label(labels, list[i], i) });
+    }
+    return out;
+  }
+
+  function label(labels, value, index) {
+    if (!labels) return String(value);
+    var l = isArr(labels) ? labels[index] : labels[value];
+    return l === undefined ? String(value) : l;
+  }
+
+  /* one button builder: api buttons, table "add row", table "remove" */
+  function button(text, map) {
+    return '<button type="button"' + attr(map) + '>' + esc(text) + '</button>';
+  }
+
+  /* one input builder: text/number/range/color/file/date/time/email/url/
+     checkbox/radio, incl. every native validation attribute */
+  function inputHTML(type, path, p, a) {
+    a = a || {};
+    var t = a.type || typeOf(p);
+    var boxed = type === 'checkbox' || type === 'radio';
+    var map = {
+      type: type,
+      id: a.id === false ? null : idOf(path),
+      name: a.key ? null : path,
+      'data-type': t,
+      'data-key': a.key || null,
+      'data-item': a.item || null,
+      /* a lone checkbox/switch can't express "required" (false is a value) */
+      required: type === 'radio' || !boxed ? a.required : null,
+      readonly: !boxed && p.readOnly,
+      disabled: p['x-disabled'] || a.disabled,
+      min: p.minimum,
+      max: p.maximum,
+      step: type === 'number' || type === 'range'
+        ? (p.multipleOf || (t === 'integer' ? 1 : 'any')) : null,
+      minlength: p.minLength,
+      maxlength: p.maxLength,
+      pattern: p.pattern,
+      placeholder: p['x-placeholder'] || p.placeholder,
+      title: p.description,
+      role: a.role
+    };
+    if (boxed) {
+      map.checked = a.checked !== undefined ? a.checked : p['default'] === true;
+      if (a.value !== undefined) map.value = String(a.value);
+    } else {
+      map.value = String(a.value !== undefined ? a.value
+        : (p['default'] === undefined ? '' : p['default']));
+    }
+    return '<input' + attr(map) + '>';
+  }
+
+  /* one select builder: string enum, number enum, boolean, table cells */
+  function selectHTML(path, p, a) {
+    a = a || {};
+    var t = typeOf(p), opts = options(p);
+    var current = a.value !== undefined ? a.value : p['default'];
+    var html = '<select' + attr({
+      id: a.key ? null : idOf(path),
+      name: a.key ? null : path,
+      'data-key': a.key || null,
+      'data-type': t,
+      required: a.required,
+      disabled: p['x-disabled']
+    }) + '>';
+    if (!a.key && current === undefined) html += '<option value=""></option>';
+    for (var i = 0; i < opts.length; i++) {
+      html += '<option' + attr({
+        value: String(opts[i].v),
+        selected: String(opts[i].v) === String(current)
+      }) + '>' + esc(opts[i].l) + '</option>';
     }
     return html + '</select>';
   }
 
-  function computed(path, prop) {
-    WATCH.push({ path: path, tpl: String(prop['x-template']), map: prop['x-watch'] || {} });
-    return '<input type="text" id="' + idOf(path) + '" name="' + esc(path) + '" data-type="string"' +
-      ' readonly' + (prop.description ? ' title="' + esc(prop.description) + '"' : '') + '>';
+  /* --------------------------------------------------------- 3. widgets (W) */
+
+  function typed(type) {
+    return function (p, path, ctx, a) { return inputHTML(type, path, p, a); };
   }
 
-  function tableCell(key, prop, value) {
-    if (prop.enum) {
-      var html = '<select data-key="' + esc(key) + '">';
-      if (value === undefined) html += '<option value=""></option>';
-      for (var i = 0; i < prop.enum.length; i++) {
-        html += '<option' + (prop.enum[i] === value ? ' selected' : '') + '>' + esc(prop.enum[i]) + '</option>';
+  function choices(type, inline) {
+    return function (p, path, ctx, a) {
+      var opts = options(p), current = p['default'], html = '', i;
+      for (i = 0; i < opts.length; i++) {
+        html += '<label>' + inputHTML(type, path, p, {
+          id: false,
+          value: opts[i].v,
+          checked: String(opts[i].v) === String(current),
+          required: a && a.required && i === 0
+        }) + esc(opts[i].l) + '</label>';
       }
-      return html + '</select>';
-    }
-    return '<input type="' + (prop.type === 'integer' || prop.type === 'number' ? 'number' : 'text') +
-      '" data-key="' + esc(key) + '" data-type="' + esc(prop.type || 'string') +
-      '" value="' + esc(value) + '">';
+      return '<fieldset' + attr({ 'data-inline': inline }) + '>' + html + '</fieldset>';
+    };
   }
 
-  function table(path, prop, label) {
-    var item = prop.items || {};
-    var cols = [];
+  function checkboxList(inline) {
+    return function (p, path, ctx, a) {
+      var item = p.items || {}, itemType = typeOf(item), opts = options(p);
+      var defaults = isArr(p['default']) ? p['default'] : [], html = '';
+      for (var i = 0; i < opts.length; i++) {
+        html += '<label>' + inputHTML('checkbox', path, p, {
+          id: false,
+          type: 'array',
+          item: itemType,
+          value: opts[i].v,
+          checked: has(defaults, opts[i].v)
+        }) + esc(opts[i].l) + '</label>';
+      }
+      return '<fieldset' + attr({ 'data-inline': inline }) + '>' + html + '</fieldset>';
+    };
+  }
+
+  var W = {
+    text: typed('text'),
+    number: typed('number'),
+    range: typed('range'),
+    color: typed('color'),
+    file: typed('file'),
+    date: typed('date'),
+    time: typed('time'),
+    'datetime-local': typed('datetime-local'),
+    email: typed('email'),
+    uri: typed('url'),
+    checkbox: typed('checkbox'),
+    select: function (p, path, ctx, a) { return selectHTML(path, p, a); },
+    radios: choices('radio', false),
+    'radios-inline': choices('radio', true),
+    checkboxes: checkboxList(false),
+    'checkboxes-inline': checkboxList(true)
+  };
+
+  W['switch'] = function (p, path, ctx, a) {
+    return inputHTML('checkbox', path, p, { role: 'switch', checked: a && a.checked });
+  };
+
+  /* x-format alias: "date-time" picks the same widget as format: "date-time" */
+  W['date-time'] = W['datetime-local'];
+
+  /* button widget: POST the JSON form values to x-api-addr */
+  W.button = function (p, path) {
+    return '<div>' + button(p['x-label'] || 'Submit', {
+      'data-api': p['x-api-addr'],
+      'data-path': path
+    }) + '<output></output></div>';
+  };
+
+  /* null: no interactive element, only a placeholder cell */
+  W['null'] = function (p, path) {
+    return '<output' + attr({ 'data-null': path }) + '></output>';
+  };
+
+  /* array + x-format: table */
+  W.table = function (p, path, ctx) {
+    var item = p.items || {}, cols = [];
     each(item.properties || {}, function (key) { cols.push(key); });
 
-    var head = '', blank = '';
-    for (var i = 0; i < cols.length; i++) {
-      var p = item.properties[cols[i]];
-      head += '<th>' + esc(p.title || humanize(cols[i])) + '</th>';
-      blank += '<td>' + tableCell(cols[i], p) + '</td>';
+    var head = '', blank = '', i;
+    for (i = 0; i < cols.length; i++) {
+      head += '<th>' + esc(titleOf(item.properties[cols[i]], cols[i])) + '</th>';
+      blank += '<td>' + control(item.properties[cols[i]], path, ctx, { key: cols[i] }) + '</td>';
     }
-    blank += '<td><button type="button" data-del="1" aria-label="Remove">&times;</button></td>';
-    TABLE[path] = '<tr>' + blank + '</tr>';
+    blank += '<td>' + button('\u00d7', { 'data-del': 1, 'aria-label': 'Remove' }) + '</td>';
+    ctx.tables[path] = '<tr>' + blank + '</tr>';
 
-    var rows = '', def = prop['default'];
-    if (isArr(def)) {
-      for (i = 0; i < def.length; i++) {
+    var rows = '', list = p['default'];
+    if (isArr(list)) {
+      for (i = 0; i < list.length; i++) {
         rows += '<tr>';
         for (var j = 0; j < cols.length; j++) {
-          rows += '<td>' + tableCell(cols[j], item.properties[cols[j]], def[i][cols[j]]) + '</td>';
+          rows += '<td>' + control(item.properties[cols[j]], path, ctx, {
+            key: cols[j],
+            value: list[i][cols[j]]
+          }) + '</td>';
         }
-        rows += '<td><button type="button" data-del="1" aria-label="Remove">&times;</button></td></tr>';
+        rows += '<td>' + button('\u00d7', { 'data-del': 1, 'aria-label': 'Remove' }) + '</td></tr>';
       }
     }
 
-    return '<row><label>' + esc(label) + '</label><div>' +
-      '<table data-table="' + esc(path) + '">' +
+    return '<div><table data-table="' + esc(path) + '">' +
         '<thead><tr>' + head + '<th></th></tr></thead>' +
         '<tbody>' + rows + '</tbody>' +
-      '</table>' +
-      '<button type="button" data-add="' + esc(path) + '">Add row</button>' +
-      '</div></row>';
+      '</table>' + button('Add row', { 'data-add': path }) + '</div>';
+  };
+
+  /* --------------------------------------------- 4. dispatch + containers */
+
+  var FORMAT = {
+    date: 'date', time: 'time', 'date-time': 'datetime-local',
+    email: 'email', uri: 'uri'
+  };
+
+  function control(p, path, ctx, a) {
+    var xf = p['x-format'];
+    if (p['x-template']) return computed(p, path, ctx);
+    if (xf && W[xf]) return W[xf](p, path, ctx, a);
+    if (FORMAT[p.format]) return W[FORMAT[p.format]](p, path, ctx, a);
+
+    var t = typeOf(p);
+    if (t === 'boolean') return W.checkbox(p, path, ctx, a);
+    if (t === 'array') return W.checkboxes(p, path, ctx, a);
+    if (t === 'null') return W['null'](p, path, ctx, a);
+    if (options(p).length) return W.select(p, path, ctx, a);
+    if (t === 'number' || t === 'integer') {
+      return (p.minimum !== undefined && p.maximum !== undefined)
+        ? W.range(p, path, ctx, a) : W.number(p, path, ctx, a);
+    }
+    return W.text(p, path, ctx, a);
   }
 
-  function row(path, prop, req, label) {
-    var w = widget(prop), ctl;
-    if (w === 'table') return table(path, prop, label);
-    if (prop['x-template']) ctl = computed(path, prop);
-    else if (w === 'switch' || prop.type === 'boolean') ctl = checkbox(path, prop);
-    else if (prop.enum) ctl = select(path, prop, req);
-    else ctl = input(path, prop, req);
-    return '<row><label for="' + idOf(path) + '">' + esc(label) + '</label>' + ctl + '</row>';
+  function computed(p, path, ctx) {
+    ctx.watch.push({ path: path, tpl: String(p['x-template']), map: p['x-watch'] || {} });
+    return inputHTML('text', path, p, { type: 'string' });
   }
 
-  /* walk the schema; nested objects are flattened, labels keep the parent title */
-  function walk(props, reqList, base, prefix, rows) {
-    each(props || {}, function (name, prop) {
-      var path = base ? base + '.' + name : name;
-      var label = prop.title || humanize(name);
-      if (isObj(prop.properties)) {
-        walk(prop.properties, prop.required, path, label + ': ', rows);
-      } else if (prop.type === 'array' && widget(prop) !== 'table') {
-        /* skeleton: only "table" arrays are rendered */
-      } else {
-        rows.push(row(path, prop, has(reqList, name), prefix + label));
-      }
+  function rowHTML(p, name, path, req, ctx) {
+    return '<row><label>' + esc(titleOf(p, name)) + '</label>' +
+      control(p, path, ctx, { required: req }) + '</row>';
+  }
+
+  /* object -> fieldset+legend, or details+summary with x-format:accordion */
+  function objectHTML(p, name, path, ctx) {
+    var body = fields(p, path, ctx), title = esc(titleOf(p, name));
+    if (p['x-format'] === 'accordion') {
+      return '<details open><summary>' + title + '</summary>' + body + '</details>';
+    }
+    return '<fieldset><legend>' + title + '</legend>' + body + '</fieldset>';
+  }
+
+  /* properties + if/then/else of one object schema */
+  function fields(p, path, ctx) {
+    var html = '';
+    each(p.properties || {}, function (name, sub) {
+      var subPath = path ? path + '.' + name : name;
+      html += typeOf(sub) === 'object'
+        ? objectHTML(sub, name, subPath, ctx)
+        : rowHTML(sub, name, subPath, has(p.required, name), ctx);
     });
+    if (p['if'] && (p['then'] || p['else'])) {
+      html += '<div' + attr({ 'data-if': path, 'data-then': true }) + '>' +
+        (p['then'] ? fields(p['then'], path, ctx) : '') + '</div>';
+      html += '<div' + attr({ 'data-if': path, 'data-else': true }) + '>' +
+        (p['else'] ? fields(p['else'], path, ctx) : '') + '</div>';
+      ctx.conds.push({ path: path, test: p['if'] });
+    }
+    return html;
   }
 
-  /* ------------------------------------------------------------------ values */
-
-  function set(obj, path, value) {
-    var parts = [], re = /([^.[\]]+)|\[([0-9]+)\]/g, m;
-    while ((m = re.exec(String(path)))) {
-      parts.push(m[2] === undefined ? m[1] : parseInt(m[2], 10));
-    }
-    var o = obj;
-    for (var i = 0; i < parts.length - 1; i++) {
-      var key = parts[i], next = parts[i + 1];
-      if (!o[key] || typeof o[key] !== 'object') o[key] = typeof next === 'number' ? [] : {};
-      o = o[key];
-    }
-    if (parts.length) o[parts[parts.length - 1]] = value;
-  }
+  /* ------------------------------------------------ 5. values + behaviour */
 
   function val(path, root) {
     var el = q('[name="' + path + '"]', root);
     return el ? el.value : '';
   }
 
-  function refresh(root) {
-    for (var i = 0; i < WATCH.length; i++) {
-      var w = WATCH[i], el = q('[name="' + w.path + '"]', root);
-      if (!el) continue;
-      el.value = w.tpl.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, function (all, key) {
-        return w.map[key] ? val(w.map[key], root) : all;
-      });
-    }
+  function push(obj, path, value) {
+    var list = get(obj, path);
+    if (!isArr(list)) { list = []; set(obj, path, list); }
+    list.push(value);
   }
 
   function collect(form) {
-    var out = {}, i, j, el, type;
+    var out = {}, i, j, k;
 
-    var fields = qa('[name]', form);
+    var fields = qa('input, select, textarea', form);
     for (i = 0; i < fields.length; i++) {
-      el = fields[i];
-      if (el.type === 'submit' || el.type === 'reset' || el.type === 'button') continue;
-      type = el.getAttribute('data-type');
-      if (type === 'boolean') { set(out, el.name, el.checked); continue; }
+      var el = fields[i], name = el.name, type = el.getAttribute('data-type');
+      if (!name || el.disabled || el.type === 'file') continue;
+      if (el.type === 'checkbox' || el.type === 'radio') {
+        if (type === 'array') {
+          if (el.checked) push(out, name, cast(el.value, el.getAttribute('data-item')));
+        } else if (el.type === 'radio') {
+          if (el.checked) set(out, name, cast(el.value, type));
+        } else {
+          set(out, name, el.checked);
+        }
+        continue;
+      }
       if (el.value === '') continue;
-      set(out, el.name, type === 'number' || type === 'integer' ? Number(el.value) : el.value);
+      set(out, name, cast(el.value, type));
     }
+
+    var nulls = qa('[data-null]', form);
+    for (i = 0; i < nulls.length; i++) set(out, nulls[i].getAttribute('data-null'), null);
 
     var tables = qa('[data-table]', form);
     for (i = 0; i < tables.length; i++) {
       var body = tables[i].getElementsByTagName('tbody')[0], items = [];
       for (j = 0; body && j < body.rows.length; j++) {
-        var cells = body.rows[j].querySelectorAll('[data-key]'), obj = {};
-        for (var k = 0; k < cells.length; k++) {
-          var cell = cells[k], cellType = cell.getAttribute('data-type');
-          obj[cell.getAttribute('data-key')] =
-            cellType === 'number' || cellType === 'integer' ? Number(cell.value) : cell.value;
+        var cells = body.rows[j].querySelectorAll('[data-key]'), row = {};
+        for (k = 0; k < cells.length; k++) {
+          row[cells[k].getAttribute('data-key')] =
+            cast(cells[k].value, cells[k].getAttribute('data-type'));
         }
-        items.push(obj);
+        items.push(row);
       }
       set(out, tables[i].getAttribute('data-table'), items);
     }
     return out;
   }
 
-  /* ------------------------------------------------------------------ render */
+  /* minimal JSON Schema test, enough for if/then/else */
+  function match(value, s) {
+    if (!s || typeof s !== 'object') return true;
+    var i;
+    if (s['const'] !== undefined) return value === s['const'];
+    if (s.enum) return has(s.enum, value);
+    if (s.type && !isType(value, s.type)) return false;
+    if (s.properties && isObj(value)) {
+      var keys = s.properties;
+      for (var key in keys) {
+        if (keys.hasOwnProperty(key) && value[key] !== undefined && !match(value[key], keys[key])) return false;
+      }
+    }
+    if (s.required) {
+      for (i = 0; i < s.required.length; i++) {
+        if (!value || value[s.required[i]] === undefined) return false;
+      }
+    }
+    if (s.minimum !== undefined && !(value >= s.minimum)) return false;
+    if (s.maximum !== undefined && !(value <= s.maximum)) return false;
+    if (s.minLength !== undefined && !(value && value.length >= s.minLength)) return false;
+    if (s.maxLength !== undefined && !(value && value.length <= s.maxLength)) return false;
+    if (s.pattern && !new RegExp(s.pattern).test(value)) return false;
+    return true;
+  }
 
-  function render(target, schema, options) {
-    var root = typeof target === 'string' ? q(target) : target;
-    if (!root) throw new Error('cjf: target not found');
+  function isType(value, type) {
+    if (type === 'null') return value === null;
+    if (type === 'array') return isArr(value);
+    if (type === 'object') return isObj(value);
+    if (type === 'integer') return typeof value === 'number' && value % 1 === 0;
+    return typeof value === type;
+  }
 
-    WATCH.length = 0;
-    TABLE = {};
+  function show(el, visible) {
+    if (!el) return;
+    if (visible) el.removeAttribute('hidden');
+    else el.setAttribute('hidden', '');
+    var list = qa('input, select, textarea', el);
+    for (var i = 0; i < list.length; i++) list[i].disabled = !visible;
+  }
 
-    var rows = [];
-    walk(schema.properties, schema.required, '', '', rows);
+  function refresh(form, ctx) {
+    var i;
 
-    root.innerHTML = '<h2>' + esc(schema.title || 'Form') + '</h2>' +
-      '<form class="pure-form pure-form-aligned">' + rows.join('') +
-        '<row><label></label><input type="reset" value="Default"></row>' +
-        '<row><label></label><input type="submit" value="Submit"></row>' +
-      '</form>' +
-      '<pre style="display:none"></pre>';
+    for (i = 0; i < ctx.watch.length; i++) {
+      var w = ctx.watch[i], el = q('[name="' + w.path + '"]', form);
+      if (!el) continue;
+      el.value = w.tpl.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, function (all, key) {
+        return w.map[key] ? val(w.map[key], form) : all;
+      });
+    }
 
-    var form = q('form', root), pre = q('pre', root);
-    if (!form) throw new Error('cjf: form not rendered');
+    if (!ctx.conds.length) return;
+    var values = collect(form);
+    for (i = 0; i < ctx.conds.length; i++) {
+      var cond = ctx.conds[i];
+      var ok = match(get(values, cond.path), cond.test);
+      var thenEl = q('[data-if="' + cond.path + '"][data-then]', form);
+      var elseEl = q('[data-if="' + cond.path + '"][data-else]', form);
+      if (thenEl) show(thenEl, ok);
+      if (elseEl) show(elseEl, !ok);
+    }
+  }
 
+  function send(form, ctx, btn) {
+    var url = btn.getAttribute('data-api');
+    var out = btn.parentNode.querySelector('output');
+    var body = JSON.stringify(collect(form));
+    var done = function (text) {
+      btn.disabled = false;
+      if (out) out.textContent = text;
+    };
+    btn.disabled = true;
+    if (ctx.request) { ctx.request(url, body, done); return; }
+    var xhr = new win.XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+      done(xhr.status >= 200 && xhr.status < 300 ? xhr.responseText : 'HTTP ' + xhr.status);
+    };
+    xhr.send(body);
+  }
+
+  function bind(form, ctx, pre, options) {
     form.addEventListener('submit', function (evt) {
       var values = collect(form);
       if (evt && evt.preventDefault) evt.preventDefault();
-      pre.style.display = '';
-      pre.innerHTML = esc(JSON.stringify(values, null, 2));
+      pre.removeAttribute('hidden');
+      pre.textContent = JSON.stringify(values, null, 2);
       if (options && options.onSubmit) options.onSubmit(values, form);
     }, false);
 
     form.addEventListener('click', function (evt) {
-      var el = evt.target, path = el.getAttribute && el.getAttribute('data-add');
-      if (path) {
-        q('[data-table="' + path + '"]', form)
-          .getElementsByTagName('tbody')[0]
-          .insertAdjacentHTML('beforeend', TABLE[path]);
+      var el = evt.target;
+      if (!el.getAttribute) return;
+
+      var api = el.getAttribute('data-api');
+      if (api) { send(form, ctx, el); return; }
+
+      var add = el.getAttribute('data-add');
+      if (add) {
+        var table = q('[data-table="' + add + '"]', form);
+        if (table) table.getElementsByTagName('tbody')[0].insertAdjacentHTML('beforeend', ctx.tables[add]);
         return;
       }
-      if (el.getAttribute && el.getAttribute('data-del') !== null) {
+
+      if (el.getAttribute('data-del') !== null) {
         var tr = el;
         while (tr && tr.tagName !== 'TR') tr = tr.parentNode;
         if (tr && tr.parentNode) tr.parentNode.removeChild(tr);
       }
     }, false);
 
-    form.addEventListener('input', function () { refresh(form); }, false);
-    form.addEventListener('change', function () { refresh(form); }, false);
+    form.addEventListener('input', function () { refresh(form, ctx); }, false);
+    form.addEventListener('change', function () { refresh(form, ctx); }, false);
     form.addEventListener('reset', function () {
-      win.setTimeout(function () { refresh(form); }, 0);
+      win.setTimeout(function () { refresh(form, ctx); }, 0);
     }, false);
+  }
 
-    refresh(form);
+  /* --------------------------------------------------------------- 6. api */
+
+  function render(target, schema, options) {
+    var root = typeof target === 'string' ? q(target) : target;
+    if (!root) throw new Error('cjf: target not found');
+    options = options || {};
+
+    var ctx = { watch: [], conds: [], tables: {}, request: options.request || null };
+
+    root.innerHTML = '<h2>' + esc(schema.title || 'Form') + '</h2>' +
+      '<form>' + fields(schema, '', ctx) +
+        '<row><label></label><input type="reset" value="Default"></row>' +
+        '<row><label></label><input type="submit" value="Submit"></row>' +
+      '</form>' +
+      '<pre hidden></pre>';
+
+    var form = q('form', root), pre = q('pre', root);
+    if (!form || !pre) throw new Error('cjf: render failed');
+
+    bind(form, ctx, pre, options);
+    refresh(form, ctx);
     return form;
   }
 
-  win.CJF = { render: render, collect: collect, version: '0.1.0' };
+  win.CJF = { render: render, collect: collect, version: '0.2.0' };
 })(window, document);

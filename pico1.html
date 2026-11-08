@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Classless Capsule</title>
+  <link rel="stylesheet" href="pico.css">
+
+  <style>
+    :where(body > :is(header, main, footer)) {
+      box-sizing: border-box;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 16px;
+
+      @media (min-width: 576px) {
+        width: min(100% - 32px, 540px);
+      }
+
+      @media (min-width: 768px) {
+        width: min(100% - 48px, 720px);
+      }
+
+      @media (min-width: 1024px) {
+        width: min(50%, 2048px);
+      }
+    }
+
+    row {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      column-gap: 16px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    row>label,
+    row>input,
+    row>select {
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
+    row>label {
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: end;
+      align-items: center;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <form>
+      <details name="example" open>
+        <summary>Form Elements</summary>
+        <row><label>Text</label><input type="text" id="text" placeholder="Text"></row>
+        <row><label>Select</label><select id="select" required>
+            <option value="" selected>Option 1</option>
+            <option>Option 2</option>
+          </select></row>
+        <row><label>Date</label><input type="date" id="date"></row>
+        <row><label>Time</label><input type="time" id="time"></row>
+        <row><label>File</label><input type="file" id="file"></row>
+        <row><label>Disabled</label><input type="text" id="disabled" placeholder="Disabled" disabled></row>
+        <row><label>Readonly</label><input type="text" id="readonly" placeholder="Readonly" readonly></row>
+        <row><label>Range Slider</label><input type="range" min="0" max="100" value="50" id="range"></row>
+        <row><label>Color Picker</label><input type="color" id="color" value="#0eaaaa"></row>
+        <row>
+          <label>Gender</label>
+          <fieldset>
+            <label>
+              <input type="checkbox" name="english" checked />
+              English
+            </label>
+            <label>
+              <input type="checkbox" name="french" checked />
+              French
+            </label>
+            <label>
+              <input type="checkbox" name="mandarin" />
+              Mandarin
+            </label>
+            <label>
+              <input type="checkbox" name="thai" />
+              Thai
+            </label>
+            <label aria-disabled="true">
+              <input type="checkbox" name="dothraki" disabled />
+              Dothraki
+            </label>
+          </fieldset>
+        </row>
+        <row>
+          <label>Hobbit</label>
+          <fieldset>
+            <input type="checkbox" name="hindi" checked />
+            <label >Hindi</label>
+            <input type="checkbox" name="swahili" />
+            <label >Swahili</label>
+            <input type="checkbox" name="navi" disabled />
+            <label aria-disabled="true">Na'vi</label>
+          </fieldset>
+        </row>
+        <row>
+          <label>Hobbit</label>
+          <fieldset>
+            <input type="radio" name="language" checked />
+            <label>Hindi</label>
+            <input type="radio" name="language" />
+            <label>Swahili</label>
+            <input type="radio" name="language" disabled />
+            <label aria-disabled="true">Na'vi</label>
+          </fieldset>
+        </row>
+        <row><label>Switch</label><input type="checkbox" id="switch-1" role="switch" checked></row>
+      </details>
+      <hr />
+
+      <details name="example" open>
+        <summary>Graph</summary>
+        <row><label></label>
+          <p>Flamingos are known for their bright pink feathers and distinctive long necks. These birds are social
+            creatures that live in large groups, and a group of flamingos is called a flamboyance. They can often be
+            seen standing on one leg, which helps them conserve body heat.</p>
+        </row>
+      </details>
+      <hr />
+
+      <row><label></label><input type="reset" value="Default"></row>
+      <row><label></label><input type="submit" value="Submit"></row>
+    </form>
+  </main>
+</body>
+
+</html>
