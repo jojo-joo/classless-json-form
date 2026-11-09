@@ -143,24 +143,6 @@
             "title": "File",
             "x-format": "file"
           },
-          "disabled": {
-            "type": "string",
-            "title": "Disabled",
-            "x-disabled": true,
-            "placeholder": "Disabled"
-          },
-          "readonly": {
-            "type": "string",
-            "title": "Readonly",
-            "readOnly": true,
-            "default": "Readonly"
-          }
-        }
-      },
-      "Boolean": {
-        "type": "object",
-        "title": "Boolean",
-        "properties": {
           "select": {
             "type": "string",
             "title": "Select",
@@ -184,6 +166,24 @@
             "x-enum": ["Small", "Medium", "Large"],
             "default": "m"
           },
+          "disabled": {
+            "type": "string",
+            "title": "Disabled",
+            "x-disabled": true,
+            "placeholder": "Disabled"
+          },
+          "readonly": {
+            "type": "string",
+            "title": "Readonly",
+            "readOnly": true,
+            "default": "Readonly"
+          }
+        }
+      },
+      "Boolean": {
+        "type": "object",
+        "title": "Boolean",
+        "properties": {
           "switch": {
             "type": "boolean",
             "title": "Switch",
@@ -200,29 +200,6 @@
             "x-format": "select",
             "x-enum": ["Off", "On"],
             "default": false
-          },
-          "tags": {
-            "type": "array",
-            "title": "Checkboxes",
-            "items": { "type": "string", "enum": ["art", "code", "music"] },
-            "x-enum": ["Art", "Code", "Music"],
-            "default": ["code"]
-          },
-          "tags-inline": {
-            "type": "array",
-            "title": "Checkboxes inline",
-            "x-format": "checkboxes-inline",
-            "items": { "type": "string", "enum": ["a", "b", "c"] },
-            "x-enum": ["A", "B", "C"],
-            "default": ["a"]
-          },
-          "levels": {
-            "type": "array",
-            "title": "Number checkboxes",
-            "uniqueItems": true,
-            "items": { "type": "integer", "enum": [1, 2, 3] },
-            "x-enum": ["One", "Two", "Three"],
-            "default": [2]
           }
         }
       },
@@ -276,24 +253,53 @@
         }
       },
       "Array": {
-        "type": "array",
+        "type": "object",
         "title": "Array",
-        "x-format": "table",
-        "uniqueItems": true,
-        "items": {
-          "type": "object",
-          "title": "Pet",
-          "properties": {
-            "type": {
-              "type": "string",
-              "title": "Type",
-              "enum": ["cat", "dog", "bird", "reptile", "other"],
-              "default": "dog"
+        "properties": {
+          "tags": {
+            "type": "array",
+            "title": "Checkboxes",
+            "items": { "type": "string", "enum": ["art", "code", "music"] },
+            "x-enum": ["Art", "Code", "Music"],
+            "default": ["code"]
+          },
+          "tags-inline": {
+            "type": "array",
+            "title": "Checkboxes inline",
+            "x-format": "checkboxes-inline",
+            "items": { "type": "string", "enum": ["a", "b", "c"] },
+            "x-enum": ["A", "B", "C"],
+            "default": ["a"]
+          },
+          "levels": {
+            "type": "array",
+            "title": "Number checkboxes",
+            "uniqueItems": true,
+            "items": { "type": "integer", "enum": [1, 2, 3] },
+            "x-enum": ["One", "Two", "Three"],
+            "default": [2]
+          },
+          "pets": {
+            "type": "array",
+            "title": "array table",
+            "x-format": "table",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "title": "Pet",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "title": "Type",
+                  "enum": ["cat", "dog", "bird", "reptile", "other"],
+                  "default": "dog"
+                },
+                "name": { "type": "string", "title": "Name" }
+              }
             },
-            "name": { "type": "string", "title": "Name" }
+            "default": [{ "type": "dog", "name": "Walter" }]
           }
-        },
-        "default": [{ "type": "dog", "name": "Walter" }]
+        }
       },
       "Object": {
         "type": "object",
