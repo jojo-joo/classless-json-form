@@ -310,27 +310,34 @@
           }
         }
       },
-      "employment": {
+      "Condition": {
         "type": "object",
-        "title": "Employment",
+        "title": "Condition",
         "properties": {
-          "status": {
+          "SSID": {
             "type": "string",
-            "title": "Status",
-            "enum": ["employee", "student"],
-            "x-enum": ["Employee", "Student"],
-            "default": "employee"
+            "title": "SSID"
+          },
+          "password": {
+            "type": "string",
+            "title": "password"
+          },
+          "DHCP": {
+            "type": "boolean",
+            "title": "DHCP",
+            "x-format": "switch",
+            "default": true
           }
         },
-        "if": { "properties": { "status": { "const": "employee" } }, "required": ["status"] },
+        "if": { "properties": { "DHCP": { "const": true } }, "required": ["DHCP"] },
         "then": {
           "properties": {
-            "company": { "type": "string", "title": "Company", "default": "ACME" }
           }
         },
         "else": {
-          "properties": {
-            "school": { "type": "string", "title": "School", "default": "MIT" }
+          "properties": {"IP": {"type": "string","title": "IP"},
+          "NetMask": {"type": "string","title": "NetMask"},
+          "DNS": {"type": "string","title": "DNS"}
           }
         }
       },
