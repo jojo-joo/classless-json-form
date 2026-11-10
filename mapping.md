@@ -48,6 +48,30 @@
   object whose members should become panels. The object itself is not a panel,
   and each panel contains its member without a repeated label.
 
+## Multiple forms
+
+- root schema `object` -> one form and one menu entry.
+- root schema `array`  -> one form per `prefixItems` entry (legacy array `items`
+  also works), so the menu lists one entry per form.
+- every form gets `id="cjf-form-<index>"`; the menu shows one form and hides the
+  others by that id. `CJF.render` returns the `<form>` for an object root, or an
+  array of forms for an array root.
+- `x-format: "accordion"` groups are per form, so panels of different forms do
+  not collapse each other.
+
+## Page chrome
+
+`CJF.render` injects its own `<style>`, a sticky `<header>` and a `<nav>` menu
+inside that header:
+
+- the root schema `title` becomes `document.title` (the browser tab title);
+- the title of the current form is shown in the middle of the header and follows
+  the menu selection;
+- `header`, `main` and `footer` share one content column.
+
+The host page only needs `<main>` plus the schema; no `<h2>`/`<h3>` heading is
+generated, because both titles already live in the tab and in the header.
+
 ## Auxiliary keywords
 
 | keyword | applies to | meaning |
@@ -59,3 +83,4 @@
 | `x-placeholder` | text-like inputs | Adds the `placeholder` attribute (plain `placeholder` also works). |
 | `x-template` | `string` | Computed read-only value, e.g. `"{{city}}, {{state}}"`. |
 | `x-watch` | with `x-template` | Map of template key to data path, e.g. `{ "city": "location.city" }`. |
+

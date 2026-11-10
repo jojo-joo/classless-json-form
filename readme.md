@@ -15,3 +15,7 @@ classless css framework can resolve the issue above:
 - smaller and faster
 - no need to study any 
 
+## TODO
+
+- delete "type": "integer" related js in cjf.js, we only support "type": "number"
+- 

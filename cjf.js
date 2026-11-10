@@ -2,7 +2,9 @@
  * cjf.js v0.2 - classless JSON Form
  * JSON Schema 2020-12 -> native HTML5 widgets. Browser only, zero dependency, ES5.
  *
- *   CJF.render(target, schema[, options])  -> <form>   options: { onSubmit, request }
+ *   CJF.render(target, schema[, options])  -> <form> | <form>[]   options: { onSubmit, request }
+ *     root object -> one form and one menu entry
+ *     root array  -> one form per prefixItems entry (legacy array "items" works too)
  *   CJF.collect(form)                      -> plain object
  *
  * Widget selection follows mapping.md. UI hints (unknown to validators, safe):
@@ -360,7 +362,8 @@
      x-format: accordion on this object turns its properties into panels. */
   function fields(p, path, ctx) {
     var accordion = p['x-format'] === 'accordion';
-    var group = 'cjf-accordion-' + (path || 'root');
+    /* one group per form, so panels of different forms stay independent */
+    var group = 'cjf-accordion-' + (ctx.uid || 0) + '-' + (path || 'root');
     var first = true;
     var html = '';
 
@@ -576,29 +579,176 @@
     }, true);
   }
 
-  /* --------------------------------------------------------------- 6. api */
+  /* ------------------------------------------------- 6. page chrome + style */
+
+  var ICON_MENU = '<svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
+  var ICON_SUN = '<svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/>' +
+    '<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2' +
+    'M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  var ICON_MOON = '<svg class="moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+
+  /* moved here from index.html <style> + header.html <style> */
+  var CSS = [
+    /* page layout: header / main / footer share one content column */
+    'body>main,body>header,body>footer{box-sizing:border-box;width:100%;max-width:none;margin:0 auto;padding:0 16px}',
+    '@media (min-width:576px){body>main,body>header,body>footer{width:min(100% - 32px,540px)}}',
+    '@media (min-width:768px){body>main,body>header,body>footer{width:min(100% - 48px,720px)}}',
+    '@media (min-width:1024px){body>main,body>header,body>footer{width:min(50%,2048px)}}',
+    /* one property per row */
+    'row{display:grid;grid-template-columns:1fr 2fr;column-gap:16px;margin-bottom:8px;align-items:center}',
+    'row>label,row>input,row>select,row>div{min-width:0;box-sizing:border-box}',
+    'row>label{display:grid;grid-auto-flow:column;justify-content:end;align-items:center}',
+    'fieldset[data-inline]{display:flex;flex-wrap:wrap;gap:.5em 1.25em}',
+    'row table button[type=button],row button[data-add]{width:auto;padding:.25rem .6rem;font-size:.9rem}',
+    'fieldset legend{font-weight:600}',
+    /* header: sticky, same content column as main */
+    'body>header{position:sticky;top:0;z-index:9;height:56px;display:grid;' +
+      'grid-template-columns:1fr auto 1fr;align-items:center;padding:0 6px;' +
+      'background:var(--pico-background-color,#fff);' +
+      'border-bottom:1px solid var(--pico-muted-border-color,#ddd)}',
+    'body>main{padding-top:12px}',
+    '#cjf-menu{justify-self:start}',
+    '#cjf-title{justify-self:center;font-weight:600;white-space:nowrap;' +
+      'overflow:hidden;text-overflow:ellipsis}',
+    '#cjf-theme{justify-self:end}',
+    '.ico{display:flex;padding:8px;border:0;background:none;color:inherit;cursor:pointer}',
+    '.ico svg{width:24px;height:24px;stroke:currentColor;stroke-width:2;fill:none;' +
+      'stroke-linecap:round;stroke-linejoin:round}',
+    /* day / night icons */
+    '.moon{display:none}',
+    'html[data-t=dark] .moon{display:block}',
+    'html[data-t=dark] .sun{display:none}',
+    /* dropdown menu, anchored to the header's left edge */
+    'nav{position:absolute;top:100%;left:0;z-index:9;display:none;' +
+      'background:var(--pico-background-color,#fff);' +
+      'border:1px solid var(--pico-muted-border-color,#ddd);border-top:0;' +
+      'border-radius:0 0 10px 0;overflow:hidden}',
+    'nav.open{display:block}',
+    'nav button{display:block;width:100%;padding:12px 32px;border:0;background:none;' +
+      'color:inherit;font:inherit;text-align:left;cursor:pointer}',
+    'nav button:hover{background:var(--pico-secondary-background,#f0f0f0)}'
+  ].join('\n');
+
+  function injectStyle() {
+    if (q('#cjf-style')) return;
+    var style = doc.createElement('style');
+    style.id = 'cjf-style';
+    style.appendChild(doc.createTextNode(CSS));
+    (doc.head || doc.documentElement).appendChild(style);
+  }
+
+  /* show one form by its id, hide the others, and put its title in the header */
+  function showForm(root, id) {
+    var forms = qa('form', root), title = '';
+    for (var i = 0; i < forms.length; i++) {
+      var on = forms[i].id === id;
+      forms[i].style.display = on ? '' : 'none';
+      if (on) title = forms[i].getAttribute('data-title') || '';
+    }
+    var el = q('#cjf-title');
+    if (el) el.textContent = title;
+  }
+
+  function chrome(root, list) {
+    var parent = root.parentNode || doc.body;
+    var old = q('#cjf-header');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    old = q('#cjf-nav');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+
+    var header = doc.createElement('header');
+    header.id = 'cjf-header';
+    header.innerHTML =
+      '<button class="ico" id="cjf-menu" aria-label="menu">' + ICON_MENU + '</button>' +
+      '<span id="cjf-title">' + esc(list[0].title || '') + '</span>' +
+      '<button class="ico" id="cjf-theme" aria-label="theme">' + ICON_SUN + ICON_MOON + '</button>';
+
+    var nav = doc.createElement('nav');
+    nav.id = 'cjf-nav';
+    var items = '';
+    for (var i = 0; i < list.length; i++) {
+      items += '<button data-id="cjf-form-' + i + '">' + esc(list[i].title) + '</button>';
+    }
+    nav.innerHTML = items;
+
+    /* nav lives inside the header so it lines up with the header's left edge */
+    header.appendChild(nav);
+    parent.insertBefore(header, root);
+
+    q('#cjf-menu', header).onclick = function () {
+      nav.className = nav.className === 'open' ? '' : 'open';
+    };
+
+    nav.onclick = function (evt) {
+      var btn = evt.target;
+      var id = btn.getAttribute ? btn.getAttribute('data-id') : null;
+      if (!id) return;
+      showForm(root, id);
+      nav.className = '';
+    };
+
+    q('#cjf-theme', header).onclick = function () {
+      var html = doc.documentElement;
+      if (html.getAttribute('data-t') === 'dark') {
+        html.removeAttribute('data-t');
+        html.setAttribute('data-theme', 'light');
+      } else {
+        html.setAttribute('data-t', 'dark');
+        html.setAttribute('data-theme', 'dark');
+      }
+    };
+  }
+
+  /* root object -> one form; root array -> one form per item schema */
+  function formList(schema) {
+    var list = [], i;
+    if (typeOf(schema) === 'array') {
+      var items = schema.prefixItems || (isArr(schema.items) ? schema.items : null) ||
+        [schema.items || {}];
+      for (i = 0; i < items.length; i++) {
+        list.push({ title: items[i].title || 'Form ' + (i + 1), schema: items[i] });
+      }
+    } else {
+      list.push({ title: schema.title || 'Form', schema: schema });
+    }
+    return list;
+  }
+
+  /* --------------------------------------------------------------- 7. api */
 
   function render(target, schema, options) {
     var root = typeof target === 'string' ? q(target) : target;
     if (!root) throw new Error('cjf: target not found');
     options = options || {};
 
-    var ctx = { watch: [], conds: [], tables: {}, request: options.request || null };
+    var list = formList(schema);
+    injectStyle();
+    chrome(root, list);
 
-    root.innerHTML = '<h2>' + esc(schema.title || 'Form') + '</h2>' +
-      '<form>' + fields(schema, '', ctx) +
+    if (schema.title) doc.title = schema.title;
+
+    var html = '';
+    var ctxs = [], i;
+    for (i = 0; i < list.length; i++) {
+      var ctx = { watch: [], conds: [], tables: {}, request: options.request || null, uid: i };
+      ctxs.push(ctx);
+      html += '<form id="cjf-form-' + i + '" data-title="' + esc(list[i].title) + '"' +
+        (i === 0 ? '' : ' style="display:none"') + '>' +
+        (typeOf(list[i].schema) === 'object' ? fields(list[i].schema, '', ctx) : '') +
         '<row><label></label><input type="reset" value="Default"></row>' +
         '<row><label></label><input type="submit" value="Submit"></row>' +
-      '</form>' +
-      '<pre hidden></pre>';
+        '<pre hidden></pre>' +
+      '</form>';
+    }
+    root.innerHTML = html;
 
-    var form = q('form', root), pre = q('pre', root);
-    if (!form || !pre) throw new Error('cjf: render failed');
-
-    bind(form, ctx, pre, options);
-    refresh(form, ctx);
-    return form;
+    var forms = qa('form', root);
+    for (i = 0; i < forms.length; i++) {
+      bind(forms[i], ctxs[i], q('pre', forms[i]), options);
+      refresh(forms[i], ctxs[i]);
+    }
+    return forms.length === 1 ? forms[0] : forms;
   }
 
-  win.CJF = { render: render, collect: collect, version: '0.2.0' };
+  win.CJF = { render: render, collect: collect, version: '0.3.0' };
 })(window, document);
