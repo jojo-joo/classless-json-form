@@ -120,7 +120,8 @@
               "radios-inline": {
                 "type": "string",
                 "title": "Radios inline",
-                "x-format": "radios-inline",
+                "x-format": "radios",
+                "x-inline": true,
                 "enum": [
                   "s",
                   "m",
@@ -148,7 +149,8 @@
               "verify": {
                 "type": "string",
                 "title": "Button inline",
-                "x-format": "button-inline",
+                "x-format": "button",
+                "x-inline": true,
                 "x-label": "Verify",
                 "x-api-addr": "/api/echo",
                 "default": "ABC-123"
@@ -240,7 +242,8 @@
               "radios-inline": {
                 "type": "number",
                 "title": "Number radios inline",
-                "x-format": "radios-inline",
+                "x-format": "radios",
+                "x-inline": true,
                 "enum": [0, 1, 2],
                 "x-enum": ["Zero", "One", "Two"],
                 "default": 1
@@ -248,7 +251,8 @@
               "scan": {
                 "type": "number",
                 "title": "Number button inline",
-                "x-format": "button-inline",
+                "x-format": "button",
+                "x-inline": true,
                 "x-label": "Scan",
                 "x-api-addr": "/api/scan",
                 "minimum": 0,
@@ -283,7 +287,7 @@
               "tags-inline": {
                 "type": "array",
                 "title": "Checkboxes inline",
-                "x-format": "checkboxes-inline",
+                "x-inline": true,
                 "items": {
                   "type": "string",
                   "enum": [

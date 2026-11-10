@@ -8,8 +8,10 @@
  *   CJF.collect(form)                      -> plain object
  *
  * Widget selection follows mapping.md. UI hints (unknown to validators, safe):
- *   x-format   switch | select | range | button | radios | radios-inline |
- *              checkboxes-inline | table | accordion | color | file
+ *   x-format   switch | select | range | button | radios | table | accordion |
+ *              password | date | time | datetime-local | email | uri | color | file
+ *   x-inline   true lays radios / checkboxes out on one line and puts the button
+ *              next to the input (a button without x-inline replaces the input)
  *   x-enum     option labels: array parallel to enum, or { "value": "Label" }
  *   x-label    label of an x-format:button
  *   x-api-addr POST target of an x-format:button (JSON body = form values)
@@ -210,36 +212,24 @@
     return function (p, path, ctx, a) { return inputHTML(type, path, p, a); };
   }
 
-  function choices(type, inline) {
-    return function (p, path, ctx, a) {
-      var opts = options(p), current = p['default'], html = '', i;
-      for (i = 0; i < opts.length; i++) {
-        html += '<label>' + inputHTML(type, path, p, {
-          id: false,
-          value: opts[i].v,
-          checked: String(opts[i].v) === String(current),
-          required: a && a.required && i === 0
-        }) + esc(opts[i].l) + '</label>';
-      }
-      return '<fieldset' + attr({ 'data-inline': inline }) + '>' + html + '</fieldset>';
-    };
-  }
-
-  function checkboxList(inline) {
-    return function (p, path, ctx, a) {
-      var item = p.items || {}, itemType = typeOf(item), opts = options(p);
-      var defaults = isArr(p['default']) ? p['default'] : [], html = '';
-      for (var i = 0; i < opts.length; i++) {
-        html += '<label>' + inputHTML('checkbox', path, p, {
-          id: false,
-          type: 'array',
-          item: itemType,
-          value: opts[i].v,
-          checked: has(defaults, opts[i].v)
-        }) + esc(opts[i].l) + '</label>';
-      }
-      return '<fieldset' + attr({ 'data-inline': inline }) + '>' + html + '</fieldset>';
-    };
+  /* one option per <label>, laid out inline when x-inline is true.
+     Shared by radios (single value) and checkboxes (array value). */
+  function optionGroup(p, type, path, a, isArrayGroup) {
+    var opts = options(p), current = p['default'];
+    var defaults = isArr(current) ? current : [];
+    var itemType = typeOf(p.items || {});
+    var html = '';
+    for (var i = 0; i < opts.length; i++) {
+      html += '<label>' + inputHTML(type, path, p, isArrayGroup ? {
+        id: false, type: 'array', item: itemType,
+        value: opts[i].v, checked: has(defaults, opts[i].v)
+      } : {
+        id: false, value: opts[i].v,
+        checked: String(opts[i].v) === String(current),
+        required: a && a.required && i === 0
+      }) + esc(opts[i].l) + '</label>';
+    }
+    return '<fieldset' + attr({ 'data-inline': p['x-inline'] === true }) + '>' + html + '</fieldset>';
   }
 
   var W = {
@@ -256,17 +246,15 @@
     uri: typed('url'),
     checkbox: typed('checkbox'),
     select: function (p, path, ctx, a) { return selectHTML(path, p, a); },
-    radios: choices('radio', false),
-    'radios-inline': choices('radio', true),
-    checkboxes: checkboxList(false),
-    'checkboxes-inline': checkboxList(true)
+    radios: function (p, path, ctx, a) { return optionGroup(p, 'radio', path, a, false); },
+    checkboxes: function (p, path, ctx, a) { return optionGroup(p, 'checkbox', path, a, true); }
   };
 
   W['switch'] = function (p, path, ctx, a) {
     return inputHTML('checkbox', path, p, { role: 'switch', checked: a && a.checked });
   };
 
-  /* api button, shared by "button" and "button-inline" */
+  /* api button used by the "button" widget */
   function apiButton(p, path) {
     return button(p['x-label'] || 'Submit', {
       'data-api': p['x-api-addr'],
@@ -274,15 +262,14 @@
     });
   }
 
-  /* button widget: the button replaces the control */
-  W.button = function (p, path) {
-    return '<div>' + apiButton(p, path) + '<output></output></div>';
-  };
-
-  /* button-inline: default control and button on the same line */
-  W['button-inline'] = function (p, path, ctx, a) {
-    return '<div data-inline-group>' + defaultControl(p, path, ctx, a) +
-      apiButton(p, path) + '<output></output></div>';
+  /* button widget: replaces the control, or sits next to it when x-inline */
+  W.button = function (p, path, ctx, a) {
+    var btn = apiButton(p, path);
+    if (p['x-inline'] === true) {
+      return '<div data-inline-group>' + defaultControl(p, path, ctx, a) +
+        btn + '<output></output></div>';
+    }
+    return '<div>' + btn + '<output></output></div>';
   };
 
   /* array + x-format: table */
@@ -320,7 +307,7 @@
 
   /* --------------------------------------------- 4. dispatch + containers */
 
-  /* type based widget, shared by control() and "button-inline" */
+  /* type based widget, shared by control() and the inline button */
   function defaultControl(p, path, ctx, a) {
     var t = typeOf(p);
     if (t === 'boolean') return W.checkbox(p, path, ctx, a);
@@ -611,7 +598,7 @@
     'row th,row td{white-space:nowrap}',
     'row[data-table-row]{display:block}',
     'row[data-table-row]>label{display:block;text-align:left;margin-bottom:4px}',
-    /* button-inline: control and button on one line */
+    /* x-inline: control and button on one line */
     '[data-inline-group]{display:flex;align-items:center;gap:8px}',
     '[data-inline-group]>input,[data-inline-group]>select{flex:1 1 auto;min-width:0}',
     '[data-inline-group]>button[data-api]{flex:0 0 auto;width:auto}',
