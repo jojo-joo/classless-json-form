@@ -57,7 +57,7 @@
                 "type": "string",
                 "title": "Date time",
                 "format": "date-time",
-                "x-format": "date-time",
+                "x-format": "datetime-local",
                 "default": "2026-11-02T10:30"
               },
               "email": {
@@ -88,6 +88,7 @@
               "select": {
                 "type": "string",
                 "title": "Select",
+                "x-format": "select",
                 "enum": [
                   "one",
                   "two",
@@ -146,8 +147,8 @@
               },
               "verify": {
                 "type": "string",
-                "title": "Button",
-                "x-format": "button",
+                "title": "Button inline",
+                "x-format": "button-inline",
                 "x-label": "Verify",
                 "x-api-addr": "/api/echo",
                 "default": "ABC-123"
@@ -207,6 +208,7 @@
               "priority": {
                 "type": "number",
                 "title": "Number select",
+                "x-format": "select",
                 "enum": [
                   1,
                   2,
@@ -226,6 +228,31 @@
                 "x-label": "Check",
                 "x-api-addr": "/api/check",
                 "default": 42
+              },
+              "radios": {
+                "type": "number",
+                "title": "Number radios",
+                "x-format": "radios",
+                "enum": [1, 2, 3],
+                "x-enum": ["One", "Two", "Three"],
+                "default": 2
+              },
+              "radios-inline": {
+                "type": "number",
+                "title": "Number radios inline",
+                "x-format": "radios-inline",
+                "enum": [0, 1, 2],
+                "x-enum": ["Zero", "One", "Two"],
+                "default": 1
+              },
+              "scan": {
+                "type": "number",
+                "title": "Number button inline",
+                "x-format": "button-inline",
+                "x-label": "Scan",
+                "x-api-addr": "/api/scan",
+                "minimum": 0,
+                "default": 0
               }
             }
           },
@@ -339,10 +366,6 @@
                 "type": "string",
                 "title": "Note",
                 "default": "Properties of an object rendered as details + summary"
-              },
-              "nothing": {
-                "type": "null",
-                "title": "Null"
               }
             }
           }

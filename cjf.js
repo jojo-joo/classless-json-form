@@ -244,6 +244,7 @@
 
   var W = {
     text: typed('text'),
+    password: typed('password'),
     number: typed('number'),
     range: typed('range'),
     color: typed('color'),
@@ -265,20 +266,23 @@
     return inputHTML('checkbox', path, p, { role: 'switch', checked: a && a.checked });
   };
 
-  /* x-format alias: "date-time" picks the same widget as format: "date-time" */
-  W['date-time'] = W['datetime-local'];
-
-  /* button widget: POST the JSON form values to x-api-addr */
-  W.button = function (p, path) {
-    return '<div>' + button(p['x-label'] || 'Submit', {
+  /* api button, shared by "button" and "button-inline" */
+  function apiButton(p, path) {
+    return button(p['x-label'] || 'Submit', {
       'data-api': p['x-api-addr'],
       'data-path': path
-    }) + '<output></output></div>';
+    });
+  }
+
+  /* button widget: the button replaces the control */
+  W.button = function (p, path) {
+    return '<div>' + apiButton(p, path) + '<output></output></div>';
   };
 
-  /* null: no interactive element, only a placeholder cell */
-  W['null'] = function (p, path) {
-    return '<output' + attr({ 'data-null': path }) + '></output>';
+  /* button-inline: default control and button on the same line */
+  W['button-inline'] = function (p, path, ctx, a) {
+    return '<div data-inline-group>' + defaultControl(p, path, ctx, a) +
+      apiButton(p, path) + '<output></output></div>';
   };
 
   /* array + x-format: table */
@@ -316,21 +320,23 @@
 
   /* --------------------------------------------- 4. dispatch + containers */
 
-  function control(p, path, ctx, a) {
-    var xf = p['x-format'];
-    if (p['x-template']) return computed(p, path, ctx);
-    if (xf && W[xf]) return W[xf](p, path, ctx, a);
-
+  /* type based widget, shared by control() and "button-inline" */
+  function defaultControl(p, path, ctx, a) {
     var t = typeOf(p);
     if (t === 'boolean') return W.checkbox(p, path, ctx, a);
     if (t === 'array') return W.checkboxes(p, path, ctx, a);
-    if (t === 'null') return W['null'](p, path, ctx, a);
-    if (options(p).length) return W.select(p, path, ctx, a);
     if (t === 'number' || t === 'integer') {
       return (p.minimum !== undefined && p.maximum !== undefined)
         ? W.range(p, path, ctx, a) : W.number(p, path, ctx, a);
     }
     return W.text(p, path, ctx, a);
+  }
+
+  function control(p, path, ctx, a) {
+    if (p['x-template']) return computed(p, path, ctx);
+    var xf = p['x-format'];
+    if (xf && W[xf]) return W[xf](p, path, ctx, a);
+    return defaultControl(p, path, ctx, a);
   }
 
   function computed(p, path, ctx) {
@@ -339,7 +345,9 @@
   }
 
   function rowHTML(p, name, path, req, ctx, noLabel) {
-    return '<row><label>' + (noLabel ? '' : esc(titleOf(p, name))) + '</label>' +
+    /* a table needs the full row width, so it gets its own stacked layout */
+    var table = p['x-format'] === 'table' ? ' data-table-row' : '';
+    return '<row' + table + '><label>' + (noLabel ? '' : esc(titleOf(p, name))) + '</label>' +
       control(p, path, ctx, { required: req }) + '</row>';
   }
 
@@ -368,6 +376,8 @@
     var html = '';
 
     each(p.properties || {}, function (name, sub) {
+      /* type "null" is not rendered for now */
+      if (typeOf(sub) === 'null') return;
       var subPath = path ? path + '.' + name : name;
       var req = has(p.required, name);
       if (!accordion) {
@@ -423,9 +433,6 @@
       if (el.value === '') continue;
       set(out, name, cast(el.value, type));
     }
-
-    var nulls = qa('[data-null]', form);
-    for (i = 0; i < nulls.length; i++) set(out, nulls[i].getAttribute('data-null'), null);
 
     var tables = qa('[data-table]', form);
     for (i = 0; i < tables.length; i++) {
@@ -598,8 +605,20 @@
     'row{display:grid;grid-template-columns:1fr 2fr;column-gap:16px;margin-bottom:8px;align-items:center}',
     'row>label,row>input,row>select,row>div{min-width:0;box-sizing:border-box}',
     'row>label{display:grid;grid-auto-flow:column;justify-content:end;align-items:center}',
+    /* wide tables scroll inside their cell instead of squeezing every column */
+    'row>div{overflow-x:auto}',
+    'row table{min-width:max-content}',
+    'row th,row td{white-space:nowrap}',
+    'row[data-table-row]{display:block}',
+    'row[data-table-row]>label{display:block;text-align:left;margin-bottom:4px}',
+    /* button-inline: control and button on one line */
+    '[data-inline-group]{display:flex;align-items:center;gap:8px}',
+    '[data-inline-group]>input,[data-inline-group]>select{flex:1 1 auto;min-width:0}',
+    '[data-inline-group]>button[data-api]{flex:0 0 auto;width:auto}',
+    '[data-inline-group]>output{flex:0 0 auto;font-size:.85rem}',
     'fieldset[data-inline]{display:flex;flex-wrap:wrap;gap:.5em 1.25em}',
-    'row table button[type=button],row button[data-add]{width:auto;padding:.25rem .6rem;font-size:.9rem}',
+    'row table button[type=button],row button[data-add]{' +
+      'width:auto;padding:.25rem .6rem;font-size:.9rem}',
     'fieldset legend{font-weight:600}',
     /* header: sticky, same content column as main */
     'body>header{position:sticky;top:0;z-index:9;height:56px;display:grid;' +
@@ -611,7 +630,8 @@
     '#cjf-title{justify-self:center;font-weight:600;white-space:nowrap;' +
       'overflow:hidden;text-overflow:ellipsis}',
     '#cjf-theme{justify-self:end}',
-    '.ico{display:flex;padding:8px;border:0;background:none;color:inherit;cursor:pointer}',
+    '.ico{display:flex;align-items:center;justify-content:center;width:auto;' +
+      'padding:8px;border:0;background:none;color:inherit;cursor:pointer}',
     '.ico svg{width:24px;height:24px;stroke:currentColor;stroke-width:2;fill:none;' +
       'stroke-linecap:round;stroke-linejoin:round}',
     /* day / night icons */
