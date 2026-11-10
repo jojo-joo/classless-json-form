@@ -654,8 +654,8 @@
       'stroke-linecap:round;stroke-linejoin:round}',
     /* day / night icons */
     '.moon{display:none}',
-    'html[data-t=dark] .moon{display:block}',
-    'html[data-t=dark] .sun{display:none}',
+    'html[data-t=dark] .moon,html[data-theme=dark] .moon{display:block}',
+    'html[data-t=dark] .sun,html[data-theme=dark] .sun{display:none}',
     /* dropdown menu, anchored to the header's left edge */
     'nav{position:absolute;top:100%;left:0;z-index:9;display:none;' +
       'background:var(--pico-background-color,Canvas);' +
@@ -725,15 +725,24 @@
       nav.className = '';
     };
 
+    var rootEl = doc.documentElement;
+    var media = win.matchMedia ? win.matchMedia('(prefers-color-scheme: dark)') : null;
+    var isDark = function () {
+      /* an explicit theme wins, then our own attribute, then the OS preference */
+      var theme = rootEl.getAttribute('data-theme');
+      if (theme) return theme === 'dark';
+      if (rootEl.getAttribute('data-t') === 'dark') return true;
+      return !!(media && media.matches);
+    };
+    /* show the right icon before the first click (the theme may follow the OS) */
+    if (!rootEl.getAttribute('data-theme') && !rootEl.getAttribute('data-t') && media && media.matches) {
+      rootEl.setAttribute('data-t', 'dark');
+    }
     q('#cjf-theme', header).onclick = function () {
-      var html = doc.documentElement;
-      if (html.getAttribute('data-t') === 'dark') {
-        html.removeAttribute('data-t');
-        html.setAttribute('data-theme', 'light');
-      } else {
-        html.setAttribute('data-t', 'dark');
-        html.setAttribute('data-theme', 'dark');
-      }
+      var next = isDark() ? 'light' : 'dark';
+      rootEl.setAttribute('data-theme', next);
+      if (next === 'dark') rootEl.setAttribute('data-t', 'dark');
+      else rootEl.removeAttribute('data-t');
     };
   }
 
