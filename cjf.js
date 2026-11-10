@@ -641,8 +641,8 @@
     /* header: sticky, same content column as main */
     'body>header{position:sticky;top:0;z-index:9;height:56px;display:grid;' +
       'grid-template-columns:1fr auto 1fr;align-items:center;padding:0 6px;' +
-      'background:var(--pico-background-color,#fff);' +
-      'border-bottom:1px solid var(--pico-muted-border-color,#ddd)}',
+      'background:var(--pico-background-color,Canvas);' +
+      'border-bottom:1px solid var(--pico-muted-border-color,GrayText)}',
     'body>main{padding-top:12px}',
     '#cjf-menu{justify-self:start}',
     '#cjf-title{justify-self:center;font-weight:600;white-space:nowrap;' +
@@ -658,13 +658,13 @@
     'html[data-t=dark] .sun{display:none}',
     /* dropdown menu, anchored to the header's left edge */
     'nav{position:absolute;top:100%;left:0;z-index:9;display:none;' +
-      'background:var(--pico-background-color,#fff);' +
-      'border:1px solid var(--pico-muted-border-color,#ddd);border-top:0;' +
+      'background:var(--pico-background-color,Canvas);' +
+      'border:1px solid var(--pico-muted-border-color,GrayText);border-top:0;' +
       'border-radius:0 0 10px 0;overflow:hidden}',
     'nav.open{display:block}',
     'nav button{display:block;width:100%;padding:12px 32px;border:0;background:none;' +
       'color:inherit;font:inherit;text-align:left;cursor:pointer}',
-    'nav button:hover{background:var(--pico-secondary-background,#f0f0f0)}'
+    'nav button:hover{background:var(--pico-secondary-background,ButtonFace)}'
   ].join('\n');
 
   function injectStyle() {
