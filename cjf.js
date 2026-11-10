@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * cjf.js v0.2 - classless JSON Form
  * JSON Schema 2020-12 -> native HTML5 widgets. Browser only, zero dependency, ES5.
  *
@@ -278,7 +278,8 @@
         'data-type': type
       });
     }
-    return '<fieldset' + attr({ 'data-inline': p['x-inline'] === true }) + '>' + html + '</fieldset>';
+    return '<fieldset data-buttons' + attr({ 'data-inline': p['x-inline'] === true }) + '>' +
+      html + '</fieldset>';
   };
 
   /* button widget: replaces the control, or sits next to it when x-inline */
@@ -632,6 +633,8 @@
     '[data-inline-group]>input,[data-inline-group]>select{flex:1 1 auto;min-width:0}',
     '[data-inline-group]>button[data-api]{flex:0 0 auto;width:auto}',
     'fieldset[data-inline]{display:flex;flex-wrap:wrap;gap:.5em 1.25em}',
+    'fieldset[data-buttons]{display:flex;flex-direction:column;gap:.5em}',
+    'fieldset[data-buttons][data-inline]{flex-direction:row;flex-wrap:wrap;gap:.5em 1.25em}',
     'row table button[type=button],row button[data-add]{' +
       'width:auto;padding:.25rem .6rem;font-size:.9rem}',
     'fieldset legend{font-weight:600}',
