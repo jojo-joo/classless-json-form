@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -434,7 +434,7 @@
       JSON.parse(document.getElementById('schema').textContent), {
       // demo only: no backend here, so echo what would be POSTed
       request: function (url, body, done) {
-        window.setTimeout(function () { done('POST ' + url + '\n' + body); }, 200);
+        window.setTimeout(done, 200);
       }
     });
   </script>

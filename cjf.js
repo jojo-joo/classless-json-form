@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * cjf.js v0.2 - classless JSON Form
  * JSON Schema 2020-12 -> native HTML5 widgets. Browser only, zero dependency, ES5.
  *
@@ -278,18 +278,16 @@
         'data-type': type
       });
     }
-    return '<fieldset' + attr({ 'data-inline': p['x-inline'] === true }) + '>' +
-      html + '<output></output></fieldset>';
+    return '<fieldset' + attr({ 'data-inline': p['x-inline'] === true }) + '>' + html + '</fieldset>';
   };
 
   /* button widget: replaces the control, or sits next to it when x-inline */
   W.button = function (p, path, ctx, a) {
     var btn = apiButton(p, path, ctx);
     if (p['x-inline'] === true) {
-      return '<div data-inline-group>' + defaultControl(p, path, ctx, a) +
-        btn + '<output></output></div>';
+      return '<div data-inline-group>' + defaultControl(p, path, ctx, a) + btn + '</div>';
     }
-    return '<div>' + btn + '<output></output></div>';
+    return '<div>' + btn + '</div>';
   };
 
   /* array + x-format: table */
@@ -537,22 +535,18 @@
     return JSON.stringify(body);
   }
 
+  /* POST the button pair; the response is not rendered (see the network tab) */
   function send(form, ctx, btn) {
     var url = btn.getAttribute('data-api');
-    var out = btn.parentNode.querySelector('output');
     var body = buttonBody(btn);
-    var done = function (text) {
-      btn.disabled = false;
-      if (out) out.textContent = text;
-    };
+    var done = function () { btn.disabled = false; };
     btn.disabled = true;
     if (ctx.request) { ctx.request(url, body, done); return; }
     var xhr = new win.XMLHttpRequest();
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onreadystatechange = function () {
-      if (xhr.readyState !== 4) return;
-      done(xhr.status >= 200 && xhr.status < 300 ? xhr.responseText : 'HTTP ' + xhr.status);
+      if (xhr.readyState === 4) done();
     };
     xhr.send(body);
   }
@@ -637,7 +631,6 @@
     '[data-inline-group]{display:flex;align-items:center;gap:8px}',
     '[data-inline-group]>input,[data-inline-group]>select{flex:1 1 auto;min-width:0}',
     '[data-inline-group]>button[data-api]{flex:0 0 auto;width:auto}',
-    '[data-inline-group]>output{flex:0 0 auto;font-size:.85rem}',
     'fieldset[data-inline]{display:flex;flex-wrap:wrap;gap:.5em 1.25em}',
     'row table button[type=button],row button[data-add]{' +
       'width:auto;padding:.25rem .6rem;font-size:.9rem}',
