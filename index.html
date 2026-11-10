@@ -27,67 +27,57 @@
         "properties": {
           "String": {
             "type": "object",
-            "title": "String",
             "required": [
               "text"
             ],
             "properties": {
               "text": {
                 "type": "string",
-                "title": "Text",
                 "description": "First and Last name",
                 "minLength": 4,
                 "default": "Jeremy Dorn"
               },
               "date": {
                 "type": "string",
-                "title": "Date",
                 "format": "date",
                 "x-format": "date",
                 "default": "2026-11-02"
               },
               "time": {
                 "type": "string",
-                "title": "Time",
                 "format": "time",
                 "x-format": "time",
                 "default": "10:30"
               },
               "datetime": {
                 "type": "string",
-                "title": "Date time",
                 "format": "date-time",
                 "x-format": "datetime-local",
                 "default": "2026-11-02T10:30"
               },
               "email": {
                 "type": "string",
-                "title": "Email",
                 "format": "email",
                 "x-format": "email",
                 "default": "jeremy@example.org"
               },
               "uri": {
                 "type": "string",
-                "title": "URL",
                 "format": "uri",
                 "x-format": "uri",
                 "default": "https://example.org"
               },
               "color": {
                 "type": "string",
-                "title": "Color",
                 "x-format": "color",
                 "default": "#0eaaaa"
               },
               "file": {
                 "type": "string",
-                "title": "File",
                 "x-format": "file"
               },
               "select": {
                 "type": "string",
-                "title": "Select",
                 "x-format": "select",
                 "enum": [
                   "one",
@@ -103,7 +93,6 @@
               },
               "radios": {
                 "type": "string",
-                "title": "Radios",
                 "x-format": "radios",
                 "enum": [
                   "male",
@@ -119,7 +108,6 @@
               },
               "radios-inline": {
                 "type": "string",
-                "title": "Radios inline",
                 "x-format": "radios",
                 "x-inline": true,
                 "enum": [
@@ -136,19 +124,16 @@
               },
               "disabled": {
                 "type": "string",
-                "title": "Disabled",
                 "x-disabled": true,
                 "placeholder": "Disabled"
               },
               "readonly": {
                 "type": "string",
-                "title": "Readonly",
                 "readOnly": true,
                 "default": "Readonly"
               },
               "verify": {
                 "type": "string",
-                "title": "Button inline",
                 "x-format": "button",
                 "x-inline": true,
                 "x-label": "Verify",
@@ -159,21 +144,17 @@
           },
           "Boolean": {
             "type": "object",
-            "title": "Boolean",
             "properties": {
               "switch": {
                 "type": "boolean",
-                "title": "Switch",
                 "x-format": "switch",
                 "default": true
               },
               "checkbox": {
-                "type": "boolean",
-                "title": "Checkbox"
+                "type": "boolean"
               },
               "flag": {
                 "type": "boolean",
-                "title": "Boolean select",
                 "x-format": "select",
                 "x-enum": [
                   "Off",
@@ -185,23 +166,19 @@
           },
           "Number": {
             "type": "object",
-            "title": "Number",
             "properties": {
               "quantity": {
                 "type": "number",
-                "title": "Number",
                 "default": 3
               },
               "age": {
                 "type": "number",
-                "title": "Range",
                 "minimum": 18,
                 "maximum": 99,
                 "default": 25
               },
               "rating": {
                 "type": "number",
-                "title": "x-format: range",
                 "x-format": "range",
                 "minimum": 0,
                 "maximum": 5,
@@ -209,7 +186,6 @@
               },
               "priority": {
                 "type": "number",
-                "title": "Number select",
                 "x-format": "select",
                 "enum": [
                   1,
@@ -225,7 +201,6 @@
               },
               "check": {
                 "type": "number",
-                "title": "Number button",
                 "x-format": "button",
                 "x-label": "Check",
                 "x-api-addr": "/api/check",
@@ -233,24 +208,37 @@
               },
               "radios": {
                 "type": "number",
-                "title": "Number radios",
                 "x-format": "radios",
-                "enum": [1, 2, 3],
-                "x-enum": ["One", "Two", "Three"],
+                "enum": [
+                  1,
+                  2,
+                  3
+                ],
+                "x-enum": [
+                  "One",
+                  "Two",
+                  "Three"
+                ],
                 "default": 2
               },
               "radios-inline": {
                 "type": "number",
-                "title": "Number radios inline",
                 "x-format": "radios",
                 "x-inline": true,
-                "enum": [0, 1, 2],
-                "x-enum": ["Zero", "One", "Two"],
+                "enum": [
+                  0,
+                  1,
+                  2
+                ],
+                "x-enum": [
+                  "Zero",
+                  "One",
+                  "Two"
+                ],
                 "default": 1
               },
               "scan": {
                 "type": "number",
-                "title": "Number button inline",
                 "x-format": "button",
                 "x-inline": true,
                 "x-label": "Scan",
@@ -262,11 +250,9 @@
           },
           "Array": {
             "type": "object",
-            "title": "Array",
             "properties": {
               "tags": {
                 "type": "array",
-                "title": "Checkboxes",
                 "items": {
                   "type": "string",
                   "enum": [
@@ -286,7 +272,6 @@
               },
               "tags-inline": {
                 "type": "array",
-                "title": "Checkboxes inline",
                 "x-inline": true,
                 "items": {
                   "type": "string",
@@ -307,7 +292,6 @@
               },
               "levels": {
                 "type": "array",
-                "title": "Number checkboxes",
                 "uniqueItems": true,
                 "items": {
                   "type": "integer",
@@ -328,16 +312,13 @@
               },
               "pets": {
                 "type": "array",
-                "title": "array table",
                 "x-format": "table",
                 "uniqueItems": true,
                 "items": {
                   "type": "object",
-                  "title": "Pet",
                   "properties": {
                     "type": {
                       "type": "string",
-                      "title": "Type",
                       "enum": [
                         "cat",
                         "dog",
@@ -348,8 +329,7 @@
                       "default": "dog"
                     },
                     "name": {
-                      "type": "string",
-                      "title": "Name"
+                      "type": "string"
                     }
                   }
                 },
@@ -364,11 +344,9 @@
           },
           "Object": {
             "type": "object",
-            "title": "Object",
             "properties": {
               "note": {
                 "type": "string",
-                "title": "Note",
                 "default": "Properties of an object rendered as details + summary"
               }
             }
@@ -382,19 +360,15 @@
         "properties": {
           "Condition": {
             "type": "object",
-            "title": "Condition",
             "properties": {
               "SSID": {
-                "type": "string",
-                "title": "SSID"
+                "type": "string"
               },
               "password": {
-                "type": "string",
-                "title": "password"
+                "type": "string"
               },
               "DHCP": {
                 "type": "boolean",
-                "title": "DHCP",
                 "x-format": "switch",
                 "default": true
               }
@@ -415,37 +389,30 @@
             "else": {
               "properties": {
                 "IP": {
-                  "type": "string",
-                  "title": "IP"
+                  "type": "string"
                 },
                 "NetMask": {
-                  "type": "string",
-                  "title": "NetMask"
+                  "type": "string"
                 },
                 "DNS": {
-                  "type": "string",
-                  "title": "DNS"
+                  "type": "string"
                 }
               }
             }
           },
           "computed": {
             "type": "object",
-            "title": "Computed",
             "properties": {
               "first": {
                 "type": "string",
-                "title": "First",
                 "default": "San"
               },
               "last": {
                 "type": "string",
-                "title": "Last",
                 "default": "Francisco"
               },
               "full": {
                 "type": "string",
-                "title": "Full",
                 "readOnly": true,
                 "x-template": "{{first}}, {{last}}",
                 "x-watch": {

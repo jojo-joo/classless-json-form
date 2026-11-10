@@ -40,6 +40,8 @@
 ## Notes
 
 - `type: "null"` is not rendered for now.
+- field labels always use the **property name**: `title` is only read for whole
+  forms (menu entry and document title), not for individual fields.
 - `select` must be explicit: a `string`/`number` schema with `enum` but without
   `x-format: "select"` renders the default input (text / number).
 - `format` is a validation keyword: it is checked in the backend and ignored

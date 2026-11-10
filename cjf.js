@@ -58,11 +58,6 @@
     return out;
   }
 
-  function humanize(s) {
-    s = String(s || '').replace(/[_-]+/g, ' ');
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }
-
   function idOf(path) { return 'cjf-' + path.replace(/[^A-Za-z0-9]+/g, '-'); }
 
   function typeOf(p) {
@@ -112,7 +107,9 @@
     return value;
   }
 
-  function titleOf(p, name) { return p.title || humanize(name); }
+  /* field labels are always the property name (schema "title" is only used
+     for whole forms: menu entries and the document title) */
+  function labelOf(name) { return name; }
 
   /* --------------------------------------------------- 2. shared html pieces */
 
@@ -302,7 +299,7 @@
 
     var head = '', blank = '', i;
     for (i = 0; i < cols.length; i++) {
-      head += '<th>' + esc(titleOf(item.properties[cols[i]], cols[i])) + '</th>';
+      head += '<th>' + esc(labelOf(cols[i])) + '</th>';
       blank += '<td>' + control(item.properties[cols[i]], path, ctx, { key: cols[i] }) + '</td>';
     }
     blank += '<td>' + button('\u00d7', { 'data-del': 1, 'aria-label': 'Remove' }) + '</td>';
@@ -357,13 +354,13 @@
   function rowHTML(p, name, path, req, ctx, noLabel) {
     /* a table needs the full row width, so it gets its own stacked layout */
     var table = p['x-format'] === 'table' ? ' data-table-row' : '';
-    return '<row' + table + '><label>' + (noLabel ? '' : esc(titleOf(p, name))) + '</label>' +
+    return '<row' + table + '><label>' + (noLabel ? '' : esc(labelOf(name))) + '</label>' +
       control(p, path, ctx, { required: req }) + '</row>';
   }
 
   /* object -> fieldset+legend */
   function objectHTML(p, name, path, ctx) {
-    return '<fieldset><legend>' + esc(titleOf(p, name)) + '</legend>' +
+    return '<fieldset><legend>' + esc(labelOf(name)) + '</legend>' +
       fields(p, path, ctx) + '</fieldset>';
   }
 
@@ -373,7 +370,7 @@
       ? fields(p, path, ctx)
       : rowHTML(p, name, path, req, ctx, true);
     return '<details' + (open ? ' open' : '') + attr({ name: group }) + '>' +
-      '<summary>' + esc(titleOf(p, name)) + '</summary>' + body + '</details>';
+      '<summary>' + esc(labelOf(name)) + '</summary>' + body + '</details>';
   }
 
   /* properties + if/then/else of one object schema.
