@@ -254,17 +254,40 @@
     return inputHTML('checkbox', path, p, { role: 'switch', checked: a && a.checked });
   };
 
-  /* api button used by the "button" widget */
-  function apiButton(p, path) {
+  /* api address: field level wins, the root schema is the default */
+  function apiAddr(p, ctx) {
+    return p['x-api-addr'] || (ctx && ctx.api) || '';
+  }
+
+  /* a button posts { "<property name>": <value> } */
+  function apiButton(p, path, ctx) {
     return button(p['x-label'] || 'Submit', {
-      'data-api': p['x-api-addr'],
-      'data-path': path
+      'data-api': apiAddr(p, ctx),
+      'data-key': path.split('.').pop(),
+      'data-value': (p['x-inline'] === true || p['default'] === undefined)
+        ? null : String(p['default']),
+      'data-type': typeOf(p)
     });
   }
 
+  /* buttons widget: one button per enum value, inline when x-inline */
+  W.buttons = function (p, path, ctx) {
+    var opts = options(p), key = path.split('.').pop(), type = typeOf(p), html = '';
+    for (var i = 0; i < opts.length; i++) {
+      html += button(opts[i].l, {
+        'data-api': apiAddr(p, ctx),
+        'data-key': key,
+        'data-value': String(opts[i].v),
+        'data-type': type
+      });
+    }
+    return '<fieldset' + attr({ 'data-inline': p['x-inline'] === true }) + '>' +
+      html + '<output></output></fieldset>';
+  };
+
   /* button widget: replaces the control, or sits next to it when x-inline */
   W.button = function (p, path, ctx, a) {
-    var btn = apiButton(p, path);
+    var btn = apiButton(p, path, ctx);
     if (p['x-inline'] === true) {
       return '<div data-inline-group>' + defaultControl(p, path, ctx, a) +
         btn + '<output></output></div>';
@@ -502,10 +525,25 @@
     }
   }
 
+  /* a button posts only its own pair: { "<property name>": <value> } */
+  function buttonBody(btn) {
+    var raw = btn.getAttribute('data-value');
+    var value;
+    if (raw === null) {
+      var input = btn.parentNode.querySelector('input, select, textarea');
+      value = input ? cast(input.value, btn.getAttribute('data-type')) : true;
+    } else {
+      value = cast(raw, btn.getAttribute('data-type'));
+    }
+    var body = {};
+    body[btn.getAttribute('data-key') || 'value'] = value;
+    return JSON.stringify(body);
+  }
+
   function send(form, ctx, btn) {
     var url = btn.getAttribute('data-api');
     var out = btn.parentNode.querySelector('output');
-    var body = JSON.stringify(collect(form));
+    var body = buttonBody(btn);
     var done = function (text) {
       btn.disabled = false;
       if (out) out.textContent = text;
@@ -735,9 +773,10 @@
     if (schema.title) doc.title = schema.title;
 
     var html = '';
+    var api = schema['x-api-addr'] || '';
     var ctxs = [], i;
     for (i = 0; i < list.length; i++) {
-      var ctx = { watch: [], conds: [], tables: {}, request: options.request || null, uid: i };
+      var ctx = { watch: [], conds: [], tables: {}, request: options.request || null, uid: i, api: api };
       ctxs.push(ctx);
       html += '<form id="cjf-form-' + i + '" data-title="' + esc(list[i].title) + '"' +
         (i === 0 ? '' : ' style="display:none"') + '>' +

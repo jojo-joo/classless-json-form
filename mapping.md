@@ -17,11 +17,12 @@
 | type    | number  | range          | input["range"] | Renders a range slider when `x-format` specified or `minimum` and `maximum` are defined. |
 | type    | number  | select         | select | Displays a dropdown select box populated from the `enum` array. `x-format` is required. |
 | type    | number  | radios         | input["radio"] | Renders as many radio inputs as values in the `enum` constraint. Labels customizable via `x-enum`; `x-inline` lays them out on one line. |
-| type    | number  | button         | button | Post the value in json format to the `x-api-addr` which indicate the api uri relative address. With `x-inline` the button sits next to the number input. |
+| type    | number  | button         | button | One action button; clicking posts `{ "<property>": <value> }` to `x-api-addr`. With `x-inline` the button sits next to the number input and the value is the input content. |
+| type    | number  | buttons        | button per enum value | One button per `enum` value (labelled by `x-enum`); clicking posts `{ "<property>": <value> }`. `x-inline` lays the buttons out on one line. Buttons are actions: they are not part of the form values. |
 | type    | array   |                | input["checkbox"] | Displays array values as checkboxes. Ideal for arrays of unique string, number, or integer values (`uniqueItems: true`); `x-inline` lays them out on one line. |
 | type    | array   | table          | table | Renders array items in a tabular format. Items must be `type: object`. |
 | type    | object  |                | fieldset+legend | The standard widget that renders a fieldset. |
-| type    | object  | ccordion       | details+summary | Puts `x-format: "accordion"` on the container object: each of its properties becomes one collapsible panel. Panels of a group share a `name`, so opening one closes the others; the first panel starts open. |
+| type    | object  | accordion       | details+summary | Puts `x-format: "accordion"` on the container object: each of its properties becomes one collapsible panel. Panels of a group share a `name`, so opening one closes the others; the first panel starts open. |
 | type    | string  |                | input["text"] | The standard text input that appears for string types without specific requirements. |
 | type    | string  | password       | input[type="password"] | Native password input. |
 | type    | string  | date           | input[type="date"] | Native date picker. |
@@ -33,7 +34,7 @@
 | type    | string  | file           | input[type="file"] | Native file picker. Browsers never expose the selected path, so the value is not collected. |
 | type    | string  | radios         | input["radio"] | Renders as many radio inputs as values in the `enum` constraint. Labels customizable via `x-enum`; `x-inline` lays them out on one line. |
 | type    | string  | select         | select | Renders a select dropdown with options from the `enum` constraint. `x-format` is required. |
-| type    | string  | button         | button | Post the value in json format to the `x-api-addr` which indicate the api uri relative address. With `x-inline` the button sits next to the text input. |
+| type    | string  | button         | button | One action button; clicking posts `{ "<property>": <value> }` to `x-api-addr`. With `x-inline` the button sits next to the text input and the value is the input content. |
 | if / then / else | (condition) | | (dynamic branch switching) | Uses the `if` keyword to test a condition against the current value. When matched, `then` applies; otherwise `else` applies. Jedison builds one widget per branch and swaps which one is shown as watched fields change. |
 
 ## Notes
@@ -46,7 +47,7 @@
   `input[type="text"]`; add `x-format` to pick the widget, e.g.
   `{ "format": "email", "x-format": "email" }`.
 - `x-format` accepts the widget names of the table above (`switch`, `select`,
-  `range`, `button`, `radios`, `table`, `accordion`, `password`, `date`, `time`,
+  `range`, `button`, `buttons`, `radios`, `table`, `accordion`, `password`, `date`, `time`,
   `datetime-local`, `email`, `uri`, `color`, `file`).
 - `boolean` never gets the `required` attribute: `false` is a valid value and
   HTML would force the box to be checked.
@@ -89,7 +90,7 @@ generated, because both titles already live in the tab and in the header.
 | `x-inline` | `radios`, array checkboxes, `button` | `true` lays the options out on one line, or puts the button next to the input instead of replacing it. |
 | `x-enum` | `enum`, `items.enum`, `boolean` | Option labels: array parallel to `enum`, or `{ "value": "Label" }`. For `boolean` select, `x-enum[0]` labels `false` and `x-enum[1]` labels `true`. |
 | `x-label` | `x-format: "button"` | Text of the button. |
-| `x-api-addr` | `x-format: "button"` | Relative API address; on click the form values are POSTed as JSON and the response is written next to the button. |
+| `x-api-addr` | `x-format: "button"` / `"buttons"` | Relative API address. Put it once on the root schema; a field level value overrides it. A button POSTs only its own pair `{ "<property>": <value> }`, not the whole form, and the response is written next to the button. |
 | `x-disabled` | any leaf field | Adds the `disabled` attribute. |
 | `x-placeholder` | text-like inputs | Adds the `placeholder` attribute (plain `placeholder` also works). |
 | `x-template` | `string` | Computed read-only value, e.g. `"{{city}}, {{state}}"`. |
