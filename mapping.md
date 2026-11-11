@@ -61,6 +61,22 @@
 - `x-inline` only affects `radios`, array checkboxes and `button`; it has no
   effect on other widgets.
 
+## Form actions
+
+`Default` / `Submit` are **not** generated automatically. Declare them on the
+form (the root object, or each `prefixItems` entry):
+
+```json
+"x-buttons": [
+  { "type": "reset",  "label": "Default" },
+  { "type": "submit", "label": "Submit" }
+]
+```
+
+Without `x-buttons` the form has no submit/reset button (it can still be
+submitted programmatically). `type` defaults to `submit`; the label defaults to
+`Submit` / `Default`.
+
 ## Multiple forms
 
 - root schema `object` -> one form and one menu entry.

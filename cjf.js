@@ -763,6 +763,21 @@
 
   /* --------------------------------------------------------------- 7. api */
 
+  /* form level action buttons: x-buttons: [{ type: "reset" | "submit", label }] */
+  function actionsHTML(p) {
+    var list = p['x-buttons'];
+    if (!isArr(list)) return '';
+    var html = '';
+    for (var i = 0; i < list.length; i++) {
+      var item = list[i] || {};
+      var type = item.type === 'reset' ? 'reset' : 'submit';
+      html += '<row><label></label><input type="' + type + '" value="' +
+        esc(item.label || (type === 'reset' ? 'Default' : 'Submit')) + '"></row>';
+    }
+    return html;
+  }
+
+
   function render(target, schema, options) {
     var root = typeof target === 'string' ? q(target) : target;
     if (!root) throw new Error('cjf: target not found');
@@ -783,8 +798,7 @@
       html += '<form id="cjf-form-' + i + '" data-title="' + esc(list[i].title) + '"' +
         (i === 0 ? '' : ' style="display:none"') + '>' +
         (typeOf(list[i].schema) === 'object' ? fields(list[i].schema, '', ctx) : '') +
-        '<row><label></label><input type="reset" value="Default"></row>' +
-        '<row><label></label><input type="submit" value="Submit"></row>' +
+        actionsHTML(list[i].schema) +
         '<pre hidden></pre>' +
       '</form>';
     }
