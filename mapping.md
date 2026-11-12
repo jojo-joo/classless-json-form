@@ -76,7 +76,8 @@ form (the root object, or each `prefixItems` entry):
 
 Without `x-buttons` the form has no submit/reset button (it can still be
 submitted programmatically). `type` defaults to `submit`; the label defaults to
-`Submit` / `Default`.
+`Submit` / `Default`. The action block is not a row: it spans the full form
+width.
 
 ## Multiple forms
 

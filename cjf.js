@@ -631,6 +631,9 @@
     '@media (min-width:1024px){body>main,body>header,body>footer{width:min(50%,2048px)}}',
     /* one property per row */
     'row{display:grid;grid-template-columns:1fr 2fr;column-gap:16px;margin:4px 0 4px;align-items:center}',
+    /* form actions live outside the rows, so they span the whole form */
+    '[data-actions]{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}',
+    '[data-actions]>input{width:100%}',
     'row>label,row>input,row>select,row>div{min-width:0;box-sizing:border-box}',
     'row>label{display:grid;grid-auto-flow:column;justify-content:end;align-items:center}',
     /* wide tables scroll inside their cell instead of squeezing every column */
@@ -771,6 +774,8 @@
   /* --------------------------------------------------------------- 7. api */
 
   /* form level action buttons: x-buttons: [{ type: "reset" | "submit", label }] */
+  /* form level action buttons: x-buttons: [{ type: "reset" | "submit", label }].
+     They are not rows: the action block spans the whole form width. */
   function actionsHTML(p) {
     var list = p['x-buttons'];
     if (!isArr(list)) return '';
@@ -778,10 +783,10 @@
     for (var i = 0; i < list.length; i++) {
       var item = list[i] || {};
       var type = item.type === 'reset' ? 'reset' : 'submit';
-      html += '<row><label></label><input type="' + type + '" value="' +
-        esc(item.label || (type === 'reset' ? 'Default' : 'Submit')) + '"></row>';
+      html += '<input type="' + type + '" value="' +
+        esc(item.label || (type === 'reset' ? 'Default' : 'Submit')) + '">';
     }
-    return html;
+    return '<div data-actions>' + html + '</div>';
   }
 
 
