@@ -13,8 +13,7 @@
   <main></main>
 
   <!-- demo schema, JSON Schema 2020-12 + x-* UI hints (see mapping.md) -->
-  <script type="application/json" id="schema">
-  {
+  <script type="application/json" id="schema">  {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://example.org/cjf/demo.schema.json",
     "title": "Classless JSON Form",
@@ -35,46 +34,54 @@
                 "type": "string",
                 "description": "First and Last name",
                 "minLength": 4,
-                "default": "Jeremy Dorn"
+                "default": "Jeremy Dorn",
+                "title": "Text"
               },
               "date": {
                 "type": "string",
                 "format": "date",
                 "x-format": "date",
-                "default": "2026-11-02"
+                "default": "2026-11-02",
+                "title": "Date"
               },
               "time": {
                 "type": "string",
                 "format": "time",
                 "x-format": "time",
-                "default": "10:30"
+                "default": "10:30",
+                "title": "Time"
               },
               "datetime": {
                 "type": "string",
                 "format": "date-time",
                 "x-format": "datetime-local",
-                "default": "2026-11-02T10:30"
+                "default": "2026-11-02T10:30",
+                "title": "Datetime"
               },
               "email": {
                 "type": "string",
                 "format": "email",
                 "x-format": "email",
-                "default": "jeremy@example.org"
+                "default": "jeremy@example.org",
+                "title": "Email"
               },
               "uri": {
                 "type": "string",
                 "format": "uri",
                 "x-format": "uri",
-                "default": "https://example.org"
+                "default": "https://example.org",
+                "title": "Uri"
               },
               "color": {
                 "type": "string",
                 "x-format": "color",
-                "default": "#0eaaaa"
+                "default": "#0eaaaa",
+                "title": "Color"
               },
               "file": {
                 "type": "string",
-                "x-format": "file"
+                "x-format": "file",
+                "title": "File"
               },
               "select": {
                 "type": "string",
@@ -89,7 +96,8 @@
                   "Option 2",
                   "Option 3"
                 ],
-                "default": "one"
+                "default": "one",
+                "title": "Select"
               },
               "radios": {
                 "type": "string",
@@ -104,7 +112,8 @@
                   "Female",
                   "Other"
                 ],
-                "default": "female"
+                "default": "female",
+                "title": "Radios"
               },
               "radios-inline": {
                 "type": "string",
@@ -120,27 +129,37 @@
                   "Medium",
                   "Large"
                 ],
-                "default": "m"
+                "default": "m",
+                "title": "Radios inline"
               },
               "disabled": {
                 "type": "string",
                 "x-disabled": true,
-                "placeholder": "Disabled"
+                "placeholder": "Disabled",
+                "title": "Disabled"
               },
               "readonly": {
                 "type": "string",
                 "readOnly": true,
-                "default": "Readonly"
+                "default": "Readonly",
+                "title": "Readonly"
               },
               "verify": {
                 "type": "string",
-                "x-format": "button",
+                "x-format": "buttons",
                 "x-inline": true,
-                "x-label": "Verify",
                 "x-api-addr": "/api/echo",
-                "default": "ABC-123"
+                "default": "ABC-123",
+                "title": "Verify",
+                "enum": [
+                  "ABC-123"
+                ],
+                "x-enum": [
+                  "Verify"
+                ]
               }
-            }
+            },
+            "title": "String"
           },
           "Boolean": {
             "type": "object",
@@ -148,10 +167,12 @@
               "switch": {
                 "type": "boolean",
                 "x-format": "switch",
-                "default": true
+                "default": true,
+                "title": "Switch"
               },
               "checkbox": {
-                "type": "boolean"
+                "type": "boolean",
+                "title": "Checkbox"
               },
               "flag": {
                 "type": "boolean",
@@ -160,29 +181,34 @@
                   "Off",
                   "On"
                 ],
-                "default": false
+                "default": false,
+                "title": "Flag"
               }
-            }
+            },
+            "title": "Boolean"
           },
           "Number": {
             "type": "object",
             "properties": {
               "quantity": {
                 "type": "number",
-                "default": 3
+                "default": 3,
+                "title": "Quantity"
               },
               "age": {
                 "type": "number",
                 "minimum": 18,
                 "maximum": 99,
-                "default": 25
+                "default": 25,
+                "title": "Age"
               },
               "rating": {
                 "type": "number",
                 "x-format": "range",
                 "minimum": 0,
                 "maximum": 5,
-                "default": 3
+                "default": 3,
+                "title": "Rating"
               },
               "priority": {
                 "type": "number",
@@ -197,14 +223,21 @@
                   "Medium",
                   "High"
                 ],
-                "default": 2
+                "default": 2,
+                "title": "Priority"
               },
               "check": {
                 "type": "number",
-                "x-format": "button",
-                "x-label": "Check",
+                "x-format": "buttons",
                 "x-api-addr": "/api/check",
-                "default": 42
+                "default": 42,
+                "title": "Check",
+                "enum": [
+                  42
+                ],
+                "x-enum": [
+                  "Check"
+                ]
               },
               "radios": {
                 "type": "number",
@@ -219,7 +252,8 @@
                   "Two",
                   "Three"
                 ],
-                "default": 2
+                "default": 2,
+                "title": "Radios"
               },
               "radios-inline": {
                 "type": "number",
@@ -235,18 +269,26 @@
                   "One",
                   "Two"
                 ],
-                "default": 1
+                "default": 1,
+                "title": "Radios inline"
               },
               "scan": {
                 "type": "number",
-                "x-format": "button",
+                "x-format": "buttons",
                 "x-inline": true,
-                "x-label": "Scan",
                 "x-api-addr": "/api/scan",
                 "minimum": 0,
-                "default": 0
+                "default": 0,
+                "title": "Scan",
+                "enum": [
+                  0
+                ],
+                "x-enum": [
+                  "Scan"
+                ]
               }
-            }
+            },
+            "title": "Number"
           },
           "Array": {
             "type": "object",
@@ -268,7 +310,8 @@
                 ],
                 "default": [
                   "code"
-                ]
+                ],
+                "title": "Tags"
               },
               "tags-inline": {
                 "type": "array",
@@ -288,7 +331,8 @@
                 ],
                 "default": [
                   "a"
-                ]
+                ],
+                "title": "Tags inline"
               },
               "levels": {
                 "type": "array",
@@ -308,7 +352,8 @@
                 ],
                 "default": [
                   2
-                ]
+                ],
+                "title": "Levels"
               },
               "pets": {
                 "type": "array",
@@ -338,18 +383,22 @@
                     "type": "dog",
                     "name": "Walter"
                   }
-                ]
+                ],
+                "title": "Pets"
               }
-            }
+            },
+            "title": "Array"
           },
           "Object": {
             "type": "object",
             "properties": {
               "note": {
                 "type": "string",
-                "default": "Properties of an object rendered as details + summary"
+                "default": "Properties of an object rendered as details + summary",
+                "title": "Note"
               }
-            }
+            },
+            "title": "Object"
           }
         },
         "x-buttons": [
@@ -372,15 +421,18 @@
             "type": "object",
             "properties": {
               "SSID": {
-                "type": "string"
+                "type": "string",
+                "title": "SSID"
               },
               "password": {
-                "type": "string"
+                "type": "string",
+                "title": "Password"
               },
               "DHCP": {
                 "type": "boolean",
                 "x-format": "switch",
-                "default": true
+                "default": true,
+                "title": "DHCP"
               }
             },
             "if": {
@@ -399,27 +451,33 @@
             "else": {
               "properties": {
                 "IP": {
-                  "type": "string"
+                  "type": "string",
+                  "title": "IP"
                 },
                 "NetMask": {
-                  "type": "string"
+                  "type": "string",
+                  "title": "NetMask"
                 },
                 "DNS": {
-                  "type": "string"
+                  "type": "string",
+                  "title": "DNS"
                 }
               }
-            }
+            },
+            "title": "Condition"
           },
           "computed": {
             "type": "object",
             "properties": {
               "first": {
                 "type": "string",
-                "default": "San"
+                "default": "San",
+                "title": "First"
               },
               "last": {
                 "type": "string",
-                "default": "Francisco"
+                "default": "Francisco",
+                "title": "Last"
               },
               "full": {
                 "type": "string",
@@ -428,9 +486,11 @@
                 "x-watch": {
                   "first": "computed.first",
                   "last": "computed.last"
-                }
+                },
+                "title": "Full"
               }
-            }
+            },
+            "title": "Computed"
           }
         },
         "x-buttons": [
@@ -445,8 +505,7 @@
         ]
       }
     ]
-  }
-  </script>
+  }</script>
 
   <script src="cjf.js"></script>
   <script>

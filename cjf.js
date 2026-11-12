@@ -8,13 +8,13 @@
  *   CJF.collect(form)                      -> plain object
  *
  * Widget selection follows mapping.md. UI hints (unknown to validators, safe):
- *   x-format   switch | select | range | button | radios | table | accordion |
+ *   title      row label; the key itself is only used in the submitted data
+ *   x-format   switch | select | range | buttons | radios | table | accordion |
  *              password | date | time | datetime-local | email | uri | color | file
- *   x-inline   true lays radios / checkboxes out on one line and puts the button
- *              next to the input (a button without x-inline replaces the input)
+ *              (buttons: one button per enum value, a single action is enum: [v])
+ *   x-inline   true lays radios / checkboxes / buttons out on one line
  *   x-enum     option labels: array parallel to enum, or { "value": "Label" }
- *   x-label    label of an x-format:button
- *   x-api-addr POST target of an x-format:button (JSON body = form values)
+ *   x-api-addr POST target of x-format:buttons, once on the root schema
  *   x-hidden   true drops the key from the submitted values; its children move up
  *   x-disabled, x-placeholder
  *   x-template / x-watch   computed read-only field
@@ -110,7 +110,8 @@
 
   /* field labels are always the property name (schema "title" is only used
      for whole forms: menu entries and the document title) */
-  function labelOf(name) { return name; }
+  /* "title" is the row label; the property key is only used in the submitted data */
+  function labelOf(p) { return p['title'] || ''; }
 
   /* --------------------------------------------------- 2. shared html pieces */
 
@@ -257,18 +258,8 @@
     return p['x-api-addr'] || (ctx && ctx.api) || '';
   }
 
-  /* a button posts { "<property name>": <value> } */
-  function apiButton(p, path, ctx) {
-    return button(p['x-label'] || 'Submit', {
-      'data-api': apiAddr(p, ctx),
-      'data-key': path.split('.').pop(),
-      'data-value': (p['x-inline'] === true || p['default'] === undefined)
-        ? null : String(p['default']),
-      'data-type': typeOf(p)
-    });
-  }
-
-  /* buttons widget: one button per enum value, inline when x-inline */
+  /* buttons widget: one button per enum value, inline when x-inline.
+     A single action button is the degenerate case: enum: [value], x-enum: ["Label"]. */
   W.buttons = function (p, path, ctx) {
     var opts = options(p), key = path.split('.').pop(), type = typeOf(p), html = '';
     for (var i = 0; i < opts.length; i++) {
@@ -283,15 +274,6 @@
       html + '</fieldset>';
   };
 
-  /* button widget: replaces the control, or sits next to it when x-inline */
-  W.button = function (p, path, ctx, a) {
-    var btn = apiButton(p, path, ctx);
-    if (p['x-inline'] === true) {
-      return '<div data-inline-group>' + defaultControl(p, path, ctx, a) + btn + '</div>';
-    }
-    return '<div>' + btn + '</div>';
-  };
-
   /* array + x-format: table */
   W.table = function (p, path, ctx) {
     var item = p.items || {}, cols = [];
@@ -299,7 +281,7 @@
 
     var head = '', blank = '', i;
     for (i = 0; i < cols.length; i++) {
-      head += '<th>' + esc(labelOf(cols[i])) + '</th>';
+      head += '<th>' + esc(item.properties[cols[i]]['title'] || cols[i]) + '</th>';
       blank += '<td>' + control(item.properties[cols[i]], path, ctx, { key: cols[i] }) + '</td>';
     }
     blank += '<td>' + button('\u00d7', { 'data-del': 1, 'aria-label': 'Remove' }) + '</td>';
@@ -354,13 +336,13 @@
   function rowHTML(p, name, path, req, ctx, noLabel) {
     /* a table needs the full row width, so it gets its own stacked layout */
     var table = p['x-format'] === 'table' ? ' data-table-row' : '';
-    return '<row' + table + '><label>' + (noLabel ? '' : esc(labelOf(name))) + '</label>' +
+    return '<row' + table + '><label>' + (noLabel ? '' : esc(labelOf(p))) + '</label>' +
       control(p, path, ctx, { required: req }) + '</row>';
   }
 
   /* object -> fieldset+legend */
   function objectHTML(p, name, path, ctx) {
-    return '<fieldset><legend>' + esc(labelOf(name)) + '</legend>' +
+    return '<fieldset><legend>' + esc(labelOf(p)) + '</legend>' +
       fields(p, path, ctx) + '</fieldset>';
   }
 
@@ -370,7 +352,7 @@
       ? fields(p, path, ctx)
       : rowHTML(p, name, path, req, ctx, true);
     return '<details' + (open ? ' open' : '') + attr({ name: group }) + '>' +
-      '<summary>' + esc(labelOf(name)) + '</summary>' + body + '</details>';
+      '<summary>' + esc(labelOf(p)) + '</summary>' + body + '</details>';
   }
 
   /* properties + if/then/else of one object schema.
@@ -657,10 +639,6 @@
     'row th,row td{white-space:nowrap}',
     'row[data-table-row]{display:block}',
     'row[data-table-row]>label{display:block;text-align:left;margin-bottom:4px}',
-    /* x-inline: control and button on one line */
-    '[data-inline-group]{display:flex;align-items:center;gap:8px}',
-    '[data-inline-group]>input,[data-inline-group]>select{flex:1 1 auto;min-width:0}',
-    '[data-inline-group]>button[data-api]{flex:0 0 auto;width:auto}',
     'fieldset[data-inline]{display:flex;flex-wrap:wrap;gap:.5em 1.25em}',
     'fieldset[data-buttons]{display:flex;flex-direction:column;gap:.5em}',
     'fieldset[data-buttons][data-inline]{flex-direction:row;flex-wrap:wrap;gap:.5em 1.25em}',
