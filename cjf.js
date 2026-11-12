@@ -643,8 +643,8 @@
     'row[data-table-row]{display:block}',
     'row[data-table-row]>label{display:block;text-align:left;margin-bottom:4px}',
     'fieldset[data-inline]{display:flex;flex-wrap:wrap;gap:.5em 1.25em}',
-    'fieldset[data-buttons]{display:flex;flex-direction:column;gap:.5em}',
-    'fieldset[data-buttons][data-inline]{flex-direction:row;flex-wrap:wrap;gap:.5em 1.25em}',
+    'fieldset[data-buttons]{display:flex;flex-direction:column;gap:4px}',
+    'fieldset[data-buttons][data-inline]{flex-direction:row;flex-wrap:wrap;gap:0 4px}',
     'row table button[type=button],row button[data-add]{' +
       'width:auto;padding:.25rem .6rem;font-size:.9rem}',
     'fieldset legend{font-weight:600}',
