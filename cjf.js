@@ -340,10 +340,10 @@
       control(p, path, ctx, { required: req }) + '</row>';
   }
 
-  /* object -> fieldset+legend */
+  /* object -> fieldset (+legend only when it has a title) */
   function objectHTML(p, name, path, ctx) {
-    return '<fieldset><legend>' + esc(labelOf(p)) + '</legend>' +
-      fields(p, path, ctx) + '</fieldset>';
+    var legend = p['title'] ? '<legend>' + esc(p['title']) + '</legend>' : '';
+    return '<fieldset>' + legend + fields(p, path, ctx) + '</fieldset>';
   }
 
   /* one property rendered as an accordion panel (details+summary) */
