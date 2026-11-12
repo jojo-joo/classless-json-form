@@ -58,6 +58,8 @@
 - `accordion` belongs to the container: put `x-format: "accordion"` on the
   object whose members should become panels. The object itself is not a panel,
   and each panel contains its member without a repeated label.
+- `x-hidden: true` drops just that key from the submitted data (the widget stays on
+  screen) and lifts its children one level up.
 - `x-inline` only affects `radios`, array checkboxes and `button`; it has no
   effect on other widgets.
 
@@ -105,6 +107,7 @@ generated, because both titles already live in the tab and in the header.
 
 | keyword | applies to | meaning |
 |---------|------------|---------|
+| `x-hidden` | any key | Defaults to `false`. When `true` the key itself is left out of the submitted values, while its children are attached to the **parent** key: a hidden `wifi` object submits `wifi_ssid` next to it instead of `wifi.wifi_ssid`. |
 | `x-inline` | `radios`, array checkboxes, `button` | `true` lays the options out on one line, or puts the button next to the input instead of replacing it. |
 | `x-enum` | `enum`, `items.enum`, `boolean` | Option labels: array parallel to `enum`, or `{ "value": "Label" }`. For `boolean` select, `x-enum[0]` labels `false` and `x-enum[1]` labels `true`. |
 | `x-label` | `x-format: "button"` | Text of the button. |

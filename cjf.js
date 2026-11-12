@@ -15,6 +15,7 @@
  *   x-enum     option labels: array parallel to enum, or { "value": "Label" }
  *   x-label    label of an x-format:button
  *   x-api-addr POST target of an x-format:button (JSON body = form values)
+ *   x-hidden   true drops the key from the submitted values; its children move up
  *   x-disabled, x-placeholder
  *   x-template / x-watch   computed read-only field
  *
@@ -386,6 +387,7 @@
       if (typeOf(sub) === 'null') return;
       var subPath = path ? path + '.' + name : name;
       var req = has(p.required, name);
+      if (sub['x-hidden'] === true) ctx.hidden.push(subPath);
       if (!accordion) {
         html += typeOf(sub) === 'object'
           ? objectHTML(sub, name, subPath, ctx)
@@ -419,13 +421,35 @@
     list.push(value);
   }
 
-  function collect(form) {
+  /* x-hidden drops the key itself; its children attach to the parent key */
+  function promote(name, hidden) {
+    for (var again = true; again;) {
+      again = false;
+      for (var i = 0; i < hidden.length; i++) {
+        var key = hidden[i];
+        if (!key) continue;
+        if (name === key) return null;
+        if (name.indexOf(key + '.') === 0) {
+          var parent = key.slice(0, key.lastIndexOf('.'));
+          name = (parent ? parent + '.' : '') + name.slice(key.length + 1);
+          again = true;
+          break;
+        }
+      }
+    }
+    return name;
+  }
+
+  /* raw: internal reads (conditions, templates) keep the schema paths */
+  function values(form, raw) {
     var out = {}, i, j, k;
+    var hidden = raw ? [] : (form.getAttribute('data-hidden') || '').split(' ');
 
     var fields = qa('input, select, textarea', form);
     for (i = 0; i < fields.length; i++) {
       var el = fields[i], name = el.name, type = el.getAttribute('data-type');
       if (!name || el.disabled || el.type === 'file') continue;
+      if (!raw) { name = promote(name, hidden); if (!name) continue; }
       if (el.type === 'checkbox' || el.type === 'radio') {
         if (type === 'array') {
           if (el.checked) push(out, name, cast(el.value, el.getAttribute('data-item')));
@@ -451,10 +475,15 @@
         }
         items.push(row);
       }
-      set(out, tables[i].getAttribute('data-table'), items);
+      var tpath = tables[i].getAttribute('data-table');
+      if (!raw) { tpath = promote(tpath, hidden); if (!tpath) continue; }
+      set(out, tpath, items);
     }
     return out;
   }
+
+  /* public: what the form submits (x-hidden keys are dropped) */
+  function collect(form) { return values(form, false); }
 
   /* minimal JSON Schema test, enough for if/then/else */
   function match(value, s) {
@@ -510,10 +539,10 @@
     }
 
     if (!ctx.conds.length) return;
-    var values = collect(form);
+    var data = values(form, true);
     for (i = 0; i < ctx.conds.length; i++) {
       var cond = ctx.conds[i];
-      var ok = match(get(values, cond.path), cond.test);
+      var ok = match(get(data, cond.path), cond.test);
       var thenEl = q('[data-if="' + cond.path + '"][data-then]', form);
       var elseEl = q('[data-if="' + cond.path + '"][data-else]', form);
       if (thenEl) show(thenEl, ok);
@@ -793,7 +822,7 @@
     var api = schema['x-api-addr'] || '';
     var ctxs = [], i;
     for (i = 0; i < list.length; i++) {
-      var ctx = { watch: [], conds: [], tables: {}, request: options.request || null, uid: i, api: api };
+      var ctx = { watch: [], conds: [], tables: {}, hidden: [], request: options.request || null, uid: i, api: api };
       ctxs.push(ctx);
       html += '<form id="cjf-form-' + i + '" data-title="' + esc(list[i].title) + '"' +
         (i === 0 ? '' : ' style="display:none"') + '>' +
@@ -806,6 +835,7 @@
 
     var forms = qa('form', root);
     for (i = 0; i < forms.length; i++) {
+      if (ctxs[i].hidden.length) forms[i].setAttribute('data-hidden', ctxs[i].hidden.join(' '));
       bind(forms[i], ctxs[i], q('pre', forms[i]), options);
       refresh(forms[i], ctxs[i]);
     }
