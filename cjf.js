@@ -277,12 +277,14 @@
   }
 
   /* array -> one row per default entry; x-title renders each row title.
+     x-inline: true keeps the scalar items on one line (checkbox list).
      default: [{ "ir1": 0 }, { "ir2": 0 }, ...]  (key = row name, value = initial value) */
   W.group = function (p, path, ctx) {
     var item = p.items || {}, entry = null;
     var list = isArr(p['default']) ? p['default'] : [];
     var tpl = item['x-title'] || p['x-title'] || '';
-    var html = '';
+    var inline = p['x-inline'] === true && typeOf(item) !== 'object';
+    var html = '', cells = '';
     for (var i = 0; i < list.length; i++) {
       entry = list[i];
       var name = '', value;
@@ -298,12 +300,18 @@
       var data = { name: name, value: value, index: i };
       var title = template(tpl, data) || name;
       var sub = path ? path + '[' + i + ']' : '[' + i + ']';
-      if (typeOf(item) === 'object') {
+      var ctl = control(item, sub, ctx, { key: name, value: value, checked: value === true });
+      if (inline) {
+        cells += '<label>' + ctl + esc(title) + '</label>';
+      } else if (typeOf(item) === 'object') {
         html += objectHTML(item, name, sub, ctx, title, value);
       } else {
-        html += '<row><label>' + esc(title) + '</label>' +
-          control(item, sub, ctx, { key: name, value: value, checked: value === true }) + '</row>';
+        html += '<row><label>' + esc(title) + '</label>' + ctl + '</row>';
       }
+    }
+    if (inline) {
+      return '<row><label>' + esc(p['title'] || '') + '</label>' +
+        '<fieldset data-inline>' + cells + '</fieldset></row>';
     }
     return html;
   };
