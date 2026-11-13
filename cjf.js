@@ -9,7 +9,7 @@
  *
  * Widget selection follows mapping.md. UI hints (unknown to validators, safe):
  *   title      row label; the key itself is only used in the submitted data
- *   x-format   switch | select | range | buttons | radios | table | accordion |
+ *   x-format   switch | select | range | buttons | radios | checkboxes | accordion |
  *              password | date | time | datetime-local | email | uri | color | file
  *              (buttons: one button per enum value, a single action is enum: [v])
  *   x-layout   form layout: aligned (default) | stacked | aligned-A-B
@@ -117,7 +117,7 @@
   /* --------------------------------------------------- 2. shared html pieces */
 
   /* enum + x-enum -> [{ v: value, l: label }] ; also serves boolean true/false
-     and array items (items.enum). Used by select, radios, checkboxes, table. */
+     and array items (items.enum). Used by select, radios, checkboxes. */
   function options(p) {
     var item = p.items || {};
     var list = p.enum || item.enum;
@@ -140,7 +140,7 @@
     return l === undefined ? String(value) : l;
   }
 
-  /* one button builder: api buttons, table "add row", table "remove" */
+  /* one button builder: api buttons and action buttons */
   function button(text, map) {
     return '<button type="button"' + attr(map) + '>' + esc(text) + '</button>';
   }
@@ -183,7 +183,7 @@
     return '<input' + attr(map) + '>';
   }
 
-  /* one select builder: string enum, number enum, boolean, table cells */
+  /* one select builder: string enum, number enum, boolean */
   function selectHTML(path, p, a) {
     a = a || {};
     var t = typeOf(p), opts = options(p);
@@ -261,8 +261,8 @@
 
   /* buttons widget: one button per enum value, inline when x-inline.
      A single action button is the degenerate case: enum: [value], x-enum: ["Label"]. */
-  W.buttons = function (p, path, ctx) {
-    var opts = options(p), key = path.split('.').pop(), type = typeOf(p), html = '';
+  W.buttons = function (p, path, ctx, a) {
+    var opts = options(p), key = (a && a.key) || path.split('.').pop(), type = typeOf(p), html = '';
     for (var i = 0; i < opts.length; i++) {
       html += button(opts[i].l, {
         'data-api': apiAddr(p, ctx),
@@ -275,37 +275,45 @@
       html + '</fieldset>';
   };
 
-  /* array + x-format: table */
-  W.table = function (p, path, ctx) {
-    var item = p.items || {}, cols = [];
-    each(item.properties || {}, function (key) { cols.push(key); });
+  /* {{path}} from a plain data object (used by x-title) */
+  function template(str, data) {
+    if (!str) return '';
+    return String(str).replace(/\{\{\s*([\w.-]+)\s*\}\}/g, function (all, key) {
+      var v = data ? get(data, key) : undefined;
+      return v === undefined || v === null ? '' : String(v);
+    });
+  }
 
-    var head = '', blank = '', i;
-    for (i = 0; i < cols.length; i++) {
-      head += '<th>' + esc(item.properties[cols[i]]['title'] || cols[i]) + '</th>';
-      blank += '<td>' + control(item.properties[cols[i]], path, ctx, { key: cols[i] }) + '</td>';
-    }
-    blank += '<td>' + button('\u00d7', { 'data-del': 1, 'aria-label': 'Remove' }) + '</td>';
-    ctx.tables[path] = '<tr>' + blank + '</tr>';
-
-    var rows = '', list = p['default'];
-    if (isArr(list)) {
-      for (i = 0; i < list.length; i++) {
-        rows += '<tr>';
-        for (var j = 0; j < cols.length; j++) {
-          rows += '<td>' + control(item.properties[cols[j]], path, ctx, {
-            key: cols[j],
-            value: list[i][cols[j]]
-          }) + '</td>';
-        }
-        rows += '<td>' + button('\u00d7', { 'data-del': 1, 'aria-label': 'Remove' }) + '</td></tr>';
+  /* array -> one row per default entry; x-title renders each row title.
+     default: [{ "ir1": 0 }, { "ir2": 0 }, ...]  (key = row name, value = initial value) */
+  W.group = function (p, path, ctx) {
+    var item = p.items || {}, entry = null;
+    var list = isArr(p['default']) ? p['default'] : [];
+    var tpl = item['x-title'] || p['x-title'] || '';
+    var html = '';
+    for (var i = 0; i < list.length; i++) {
+      entry = list[i];
+      var name = '', value;
+      if (isObj(entry)) {
+        var keys = [];
+        each(entry, function (k) { keys.push(k); });
+        if (keys.length === 1) { name = keys[0]; value = entry[name]; }
+        else { name = entry.name || String(i + 1); value = entry.value; }
+      } else {
+        name = String(i + 1);
+        value = entry;
+      }
+      var data = { name: name, value: value, index: i };
+      var title = template(tpl, data) || name;
+      var sub = path ? path + '[' + i + ']' : '[' + i + ']';
+      if (typeOf(item) === 'object') {
+        html += objectHTML(item, name, sub, ctx, title);
+      } else {
+        html += '<row><label>' + esc(title) + '</label>' +
+          control(item, sub, ctx, { key: name, value: value }) + '</row>';
       }
     }
-
-    return '<div><table data-table="' + esc(path) + '">' +
-        '<thead><tr>' + head + '<th></th></tr></thead>' +
-        '<tbody>' + rows + '</tbody>' +
-      '</table>' + button('Add row', { 'data-add': path }) + '</div>';
+    return html;
   };
 
   /* --------------------------------------------- 4. dispatch + containers */
@@ -314,7 +322,7 @@
   function defaultControl(p, path, ctx, a) {
     var t = typeOf(p);
     if (t === 'boolean') return W.checkbox(p, path, ctx, a);
-    if (t === 'array') return W.checkboxes(p, path, ctx, a);
+    if (t === 'array') return W.group(p, path, ctx, a);
     if (t === 'number' || t === 'integer') {
       return (p.minimum !== undefined && p.maximum !== undefined)
         ? W.range(p, path, ctx, a) : W.number(p, path, ctx, a);
@@ -334,16 +342,22 @@
     return inputHTML('text', path, p, { type: 'string' });
   }
 
-  function rowHTML(p, name, path, req, ctx, noLabel) {
-    /* a table needs the full row width, so it gets its own stacked layout */
-    var table = p['x-format'] === 'table' ? ' data-table-row' : '';
-    return '<row' + table + '><label>' + (noLabel ? '' : esc(labelOf(p))) + '</label>' +
+  function rowHTML(p, name, path, req, ctx, noLabel, title) {
+    return '<row><label>' + (noLabel ? '' : esc(title === undefined ? labelOf(p) : title)) + '</label>' +
       control(p, path, ctx, { required: req }) + '</row>';
   }
 
+  /* one property: object -> fieldset, repeated array -> many rows, else one row */
+  function blockHTML(p, name, path, req, ctx) {
+    if (typeOf(p) === 'object') return objectHTML(p, name, path, ctx);
+    if (typeOf(p) === 'array' && !(p['x-format'] && W[p['x-format']])) return W.group(p, path, ctx);
+    return rowHTML(p, name, path, req, ctx);
+  }
+
   /* object -> fieldset (+legend only when it has a title) */
-  function objectHTML(p, name, path, ctx) {
-    var legend = p['title'] ? '<legend>' + esc(p['title']) + '</legend>' : '';
+  function objectHTML(p, name, path, ctx, title) {
+    var label = title === undefined ? p['title'] : title;
+    var legend = label ? '<legend>' + esc(label) + '</legend>' : '';
     return '<fieldset>' + legend + fields(p, path, ctx) + '</fieldset>';
   }
 
@@ -351,7 +365,9 @@
   function panelHTML(p, name, path, req, ctx, group, open) {
     var body = typeOf(p) === 'object'
       ? fields(p, path, ctx)
-      : rowHTML(p, name, path, req, ctx, true);
+      : typeOf(p) === 'array' && !(p['x-format'] && W[p['x-format']])
+        ? W.group(p, path, ctx)
+        : rowHTML(p, name, path, req, ctx, true);
     return '<details' + (open ? ' open' : '') + attr({ name: group }) + '>' +
       '<summary>' + esc(labelOf(p)) + '</summary>' + body + '</details>';
   }
@@ -372,9 +388,7 @@
       var req = has(p.required, name);
       if (sub['x-hidden'] === true) ctx.hidden.push(subPath);
       if (!accordion) {
-        html += typeOf(sub) === 'object'
-          ? objectHTML(sub, name, subPath, ctx)
-          : rowHTML(sub, name, subPath, req, ctx);
+        html += blockHTML(sub, name, subPath, req, ctx);
       } else {
         html += panelHTML(sub, name, subPath, req, ctx, group, first);
         first = false;
@@ -447,21 +461,6 @@
       set(out, name, cast(el.value, type));
     }
 
-    var tables = qa('[data-table]', form);
-    for (i = 0; i < tables.length; i++) {
-      var body = tables[i].getElementsByTagName('tbody')[0], items = [];
-      for (j = 0; body && j < body.rows.length; j++) {
-        var cells = body.rows[j].querySelectorAll('[data-key]'), row = {};
-        for (k = 0; k < cells.length; k++) {
-          row[cells[k].getAttribute('data-key')] =
-            cast(cells[k].value, cells[k].getAttribute('data-type'));
-        }
-        items.push(row);
-      }
-      var tpath = tables[i].getAttribute('data-table');
-      if (!raw) { tpath = promote(tpath, hidden); if (!tpath) continue; }
-      set(out, tpath, items);
-    }
     return out;
   }
 
@@ -579,19 +578,6 @@
 
       var api = el.getAttribute('data-api');
       if (api) { send(form, ctx, el); return; }
-
-      var add = el.getAttribute('data-add');
-      if (add) {
-        var table = q('[data-table="' + add + '"]', form);
-        if (table) table.getElementsByTagName('tbody')[0].insertAdjacentHTML('beforeend', ctx.tables[add]);
-        return;
-      }
-
-      if (el.getAttribute('data-del') !== null) {
-        var tr = el;
-        while (tr && tr.tagName !== 'TR') tr = tr.parentNode;
-        if (tr && tr.parentNode) tr.parentNode.removeChild(tr);
-      }
     }, false);
 
     form.addEventListener('input', function () { refresh(form, ctx); }, false);
@@ -637,19 +623,12 @@
     '[data-actions]>input{width:100%}',
     'row>label,row>input,row>select,row>div{min-width:0;box-sizing:border-box}',
     'row>label{display:grid;grid-auto-flow:column;justify-content:end;align-items:center}',
-    /* wide tables scroll inside their cell instead of squeezing every column */
     'row>div{overflow-x:auto}',
-    'row table{min-width:max-content}',
-    'row th,row td{white-space:nowrap}',
-    'form[data-layout=stacked] row:not([data-table-row]){display:block}',
-    'form[data-layout=stacked] row:not([data-table-row])>label{display:block;text-align:left;margin-bottom:4px}',
-    'row[data-table-row]{display:block}',
-    'row[data-table-row]>label{display:block;text-align:left;margin-bottom:4px}',
+    'form[data-layout=stacked] row{display:block}',
+    'form[data-layout=stacked] row>label{display:block;text-align:left;margin-bottom:4px}',
     'fieldset[data-inline]{display:flex;flex-wrap:wrap;gap:.5em 1.25em}',
     'fieldset[data-buttons]{display:flex;flex-direction:column;gap:4px}',
     'fieldset[data-buttons][data-inline]{flex-direction:row;flex-wrap:wrap;gap:0 4px}',
-    'row table button[type=button],row button[data-add]{' +
-      'width:auto;padding:.25rem .6rem;font-size:.9rem}',
     'fieldset legend{font-weight:600}',
     /* header: sticky, same content column as main */
     'body>header{position:sticky;top:0;z-index:9;height:56px;display:grid;' +
@@ -817,7 +796,7 @@
     var api = schema['x-api-addr'] || '';
     var ctxs = [], i;
     for (i = 0; i < list.length; i++) {
-      var ctx = { watch: [], conds: [], tables: {}, hidden: [], request: options.request || null, uid: i, api: api };
+      var ctx = { watch: [], conds: [], hidden: [], request: options.request || null, uid: i, api: api };
       ctxs.push(ctx);
       var L = formLayout(list[i].schema);
       var st = [];

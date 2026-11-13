@@ -311,7 +311,8 @@
                 "default": [
                   "code"
                 ],
-                "title": "Tags"
+                "title": "Tags",
+                "x-format": "checkboxes"
               },
               "tags-inline": {
                 "type": "array",
@@ -332,7 +333,8 @@
                 "default": [
                   "a"
                 ],
-                "title": "Tags inline"
+                "title": "Tags inline",
+                "x-format": "checkboxes"
               },
               "levels": {
                 "type": "array",
@@ -353,38 +355,41 @@
                 "default": [
                   2
                 ],
-                "title": "Levels"
+                "title": "Levels",
+                "x-format": "checkboxes"
               },
               "pets": {
                 "type": "array",
-                "x-format": "table",
-                "uniqueItems": true,
+                "title": "Pets",
                 "items": {
                   "type": "object",
+                  "x-title": "{{name}}",
                   "properties": {
                     "type": {
                       "type": "string",
+                      "title": "Type",
                       "enum": [
                         "cat",
                         "dog",
                         "bird",
                         "reptile",
                         "other"
-                      ],
-                      "default": "dog"
+                      ]
                     },
-                    "name": {
-                      "type": "string"
+                    "age": {
+                      "type": "number",
+                      "title": "Age"
                     }
                   }
                 },
                 "default": [
                   {
-                    "type": "dog",
-                    "name": "Walter"
+                    "Walter": {"type": "dog", "age": 5}
+                  },
+                  {
+                    "Kitty": {"type": "cat", "age": 3}
                   }
-                ],
-                "title": "Pets"
+                ]
               }
             },
             "title": "Array"

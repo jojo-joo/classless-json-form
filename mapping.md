@@ -18,12 +18,12 @@
 | type    | number  | select         | select | Displays a dropdown select box populated from the `enum` array. `x-format` is required. |
 | type    | number  | radios         | input["radio"] | Renders as many radio inputs as values in the `enum` constraint. Labels customizable via `x-enum`; `x-inline` lays them out on one line. |
 | type    | number  | buttons        | button per enum value | One button per `enum` value (labelled by `x-enum`); clicking posts `{ "<property>": <value> }`. A single action button is just a one-element list (`enum: [v]`, `x-enum: ["Label"]`). `x-inline` lays them out on one line. Buttons are actions: they are not part of the form values. |
-| type    | array   |                | input["checkbox"] | Displays array values as checkboxes. Ideal for arrays of unique string, number, or integer values (`uniqueItems: true`); `x-inline` lays them out on one line. |
-| type    | array   | table          | table | Renders array items in a tabular format. Items must be `type: object`. |
+| type    | array   |                | one row per item | Repeats the `items` widget once per entry of `default`; the row label comes from `x-title` (e.g. `{{name}}`). Use `x-format: "checkboxes"` for a multi-select checkbox group instead. |
+| type    | array   | checkboxes     | input["checkbox"] | Multi-select group: one checkbox per `items.enum` value, values collected as an array. `x-inline` lays them out on one line. |
 | type    | object  |                | fieldset+legend | The standard widget that renders a fieldset. |
 | type    | object  | accordion      | details+summary | Puts `x-format: "accordion"` on the container object: each of its properties becomes one collapsible panel. Panels of a group share a `name`, so opening one closes the others; the first panel starts open. |
 | type    | string  |                | input["text"] | The standard text input that appears for string types without specific requirements. |
-| title   | any     |                | label | Text shown on the left of the row (legend for objects, summary for panels, header for table columns). The key stays hidden and is only used in the submitted data. |
+| title   | any     |                | label | Text shown on the left of the row (legend for objects, summary for panels). The key stays hidden and is only used in the submitted data. |
 | type    | string  | password       | input[type="password"] | Native password input. |
 | type    | string  | date           | input[type="date"] | Native date picker. |
 | type    | string  | time           | input[type="time"] | Native time picker. |
@@ -48,7 +48,7 @@
   `input[type="text"]`; add `x-format` to pick the widget, e.g.
   `{ "format": "email", "x-format": "email" }`.
 - `x-format` accepts the widget names of the table above (`switch`, `select`,
-  `range`, `buttons`, `radios`, `table`, `accordion`, `password`, `date`, `time`,
+  `range`, `buttons`, `radios`, `checkboxes`, `accordion`, `password`, `date`, `time`,
   `datetime-local`, `email`, `uri`, `color`, `file`).
 - `boolean` never gets the `required` attribute: `false` is a valid value and
   HTML would force the box to be checked.
@@ -59,7 +59,7 @@
   and each panel contains its member without a repeated label.
 - `x-hidden: true` drops just that key from the submitted data (the widget stays on
   screen) and lifts its children one level up.
-- `x-inline` only affects `radios`, array checkboxes and `buttons`; it has no
+- `x-inline` only affects `radios`, `checkboxes` and `buttons`; it has no
   effect on other widgets.
 
 ## Form actions
@@ -110,6 +110,7 @@ generated, because both titles already live in the tab and in the header.
 | `x-hidden` | any key | Defaults to `false`. When `true` the key itself is left out of the submitted values, while its children are attached to the **parent** key: a hidden `wifi` object submits `wifi_ssid` next to it instead of `wifi.wifi_ssid`. |
 | `x-layout` | form (root object, or each `prefixItems` item) | `aligned` (default), `stacked`, or `aligned-A-B`. `A`/`B` are CSS `<number [0,∞]>` track weights: non-negative, decimals allowed, `0` collapses the column (0–9 practical); `aligned-1-3` = `grid-template-columns: 1fr 3fr`. Invalid values fall back to `aligned` (1fr 2fr). `stacked` puts the label above the control. |
 | `x-inline` | `radios`, array checkboxes, `buttons` | `true` lays the options / buttons out on one line. |
+| `x-title` | `items` of a repeated array | Row title template; `{{name}}` is the key of the `default` entry, `{{index}}` its position (0-based). Without it the row shows the entry key. |
 | `x-enum` | `enum`, `items.enum`, `boolean` | Option labels: array parallel to `enum`, or `{ "value": "Label" }`. For `boolean` select, `x-enum[0]` labels `false` and `x-enum[1]` labels `true`. |
 | `x-api-addr` | `x-format: "buttons"` | Relative API address. Put it once on the root schema; a field level value overrides it. A button POSTs only its own pair `{ "<property>": <value> }`, not the whole form, and the response is written next to the button. |
 | `x-disabled` | any leaf field | Adds the `disabled` attribute. |
