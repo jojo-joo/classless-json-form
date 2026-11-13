@@ -27,7 +27,7 @@
 | type    | string  | time           | input[type="time"] | Native time picker. |
 | type    | string  | datetime-local | input[type="datetime-local"] | Native date + time picker. |
 | type    | string  | email          | input[type="email"] | Native e-mail input with built-in validation. |
-| type    | string  | uri            | input[type="url"] | Native URL input. |
+| type    | string  | url            | input[type="url"] | Native URL input. |
 | type    | string  | color          | input[type="color"] | Native color picker. `color` is not a JSON Schema format, so `x-format` is the only way. |
 | type    | string  | file           | input[type="file"] | Native file picker. Browsers never expose the selected path, so the value is not collected. |
 | type    | string  | radios         | input["radio"] | Renders as many radio inputs as values in the `enum` constraint. Labels customizable via `x-enum`; `x-inline` lays them out on one line. |
@@ -47,7 +47,7 @@
   `{ "format": "email", "x-format": "email" }`.
 - `x-format` accepts the widget names of the table above (`switch`, `select`,
   `range`, `button`, `radios`, `accordion`, `password`, `date`, `time`,
-  `datetime-local`, `email`, `uri`, `color`, `file`).
+  `datetime-local`, `email`, `url`, `color`, `file`).
 - `boolean` never gets the `required` attribute: `false` is a valid value and
   HTML would force the box to be checked.
 - An array only repeats its `items` template: one row per `default` entry

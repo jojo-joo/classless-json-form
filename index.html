@@ -66,13 +66,6 @@
                 "default": "jeremy@example.org",
                 "title": "Email"
               },
-              "uri": {
-                "type": "string",
-                "format": "uri",
-                "x-format": "uri",
-                "default": "https://example.org",
-                "title": "Uri"
-              },
               "color": {
                 "type": "string",
                 "x-format": "color",
@@ -130,6 +123,13 @@
                 "title": "Verify",
                 "enum": ["ABC-123"],
                 "x-enum": ["Verify"]
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "x-format": "url",
+                "default": "https://example.org",
+                "title": "URL"
               }
             },
             "title": "String"

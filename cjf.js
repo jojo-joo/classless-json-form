@@ -10,7 +10,7 @@
  * Widget selection follows mapping.md. UI hints (unknown to validators, safe):
  *   title      row label; the key itself is only used in the submitted data
  *   x-format   switch | select | range | button | radios | accordion |
- *              password | date | time | datetime-local | email | uri | color | file
+ *              password | date | time | datetime-local | email | url | color | file
  *              (button: one action button, label x-enum[0], value default)
  *   x-layout   form layout: aligned (default) | stacked | aligned-A-B
  *   x-inline   true lays radios / buttons out on one line
@@ -222,22 +222,13 @@
     return '<fieldset' + attr({ 'data-inline': p['x-inline'] === true }) + '>' + html + '</fieldset>';
   }
 
+  /* every widget whose name is also the input type */
+  var TYPES = 'text password number range color file date time datetime-local email url checkbox'.split(' ');
   var W = {
-    text: typed('text'),
-    password: typed('password'),
-    number: typed('number'),
-    range: typed('range'),
-    color: typed('color'),
-    file: typed('file'),
-    date: typed('date'),
-    time: typed('time'),
-    'datetime-local': typed('datetime-local'),
-    email: typed('email'),
-    uri: typed('url'),
-    checkbox: typed('checkbox'),
     select: function (p, path, ctx, a) { return selectHTML(path, p, a); },
     radios: function (p, path, ctx, a) { return optionGroup(p, 'radio', path, a); }
   };
+  for (var ti = 0; ti < TYPES.length; ti++) W[TYPES[ti]] = typed(TYPES[ti]);
 
   W['switch'] = function (p, path, ctx, a) {
     return inputHTML('checkbox', path, p, { role: 'switch', checked: a && a.checked });
