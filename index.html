@@ -234,44 +234,22 @@
             "properties": {
               "tags": {
                 "type": "array",
-                "items": {
-                  "type": "string",
-                  "enum": ["art", "code", "music"],
-                  "x-enum": ["Art", "Code", "Music"]
-                },
-                "default": [
-                  "code"
-                ],
                 "title": "Tags",
-                "x-format": "checkboxes"
-              },
-              "tags-inline": {
-                "type": "array",
-                "x-inline": true,
                 "items": {
-                  "type": "string",
-                  "enum": ["a", "b", "c"],
-                  "x-enum": ["A", "B", "C"]
+                  "type": "boolean",
+                  "x-title": "{{name}}"
                 },
                 "default": [
-                  "a"
-                ],
-                "title": "Tags inline",
-                "x-format": "checkboxes"
-              },
-              "levels": {
-                "type": "array",
-                "uniqueItems": true,
-                "items": {
-                  "type": "integer",
-                  "enum": [1, 2, 3],
-                  "x-enum": ["One", "Two", "Three"]
-                },
-                "default": [
-                  2
-                ],
-                "title": "Levels",
-                "x-format": "checkboxes"
+                  {
+                    "Art": false
+                  },
+                  {
+                    "Code": true
+                  },
+                  {
+                    "Music": false
+                  }
+                ]
               },
               "pets": {
                 "type": "array",

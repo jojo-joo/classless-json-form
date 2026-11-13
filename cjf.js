@@ -9,11 +9,11 @@
  *
  * Widget selection follows mapping.md. UI hints (unknown to validators, safe):
  *   title      row label; the key itself is only used in the submitted data
- *   x-format   switch | select | range | buttons | radios | checkboxes | accordion |
+ *   x-format   switch | select | range | buttons | radios | accordion |
  *              password | date | time | datetime-local | email | uri | color | file
  *              (buttons: one button per enum value, a single action is enum: [v])
  *   x-layout   form layout: aligned (default) | stacked | aligned-A-B
- *   x-inline   true lays radios / checkboxes / buttons out on one line
+ *   x-inline   true lays radios / buttons out on one line
  *   x-enum     option labels: array parallel to enum, or { "value": "Label" }
  *   x-api-addr POST target of x-format:buttons, once on the root schema
  *   x-hidden   true drops the key from the submitted values; its children move up
@@ -117,7 +117,7 @@
   /* --------------------------------------------------- 2. shared html pieces */
 
   /* enum + x-enum -> [{ v: value, l: label }] ; also serves boolean true/false
-     and array items (items.enum). Used by select, radios, checkboxes. */
+     and array items (items.enum). Used by select, radios, buttons. */
   function options(p) {
     var item = p.items || {};
     var list = p.enum || item.enum;
@@ -154,10 +154,9 @@
     var map = {
       type: type,
       id: a.id === false ? null : idOf(path),
-      name: a.key ? null : path,
+      name: path,
       'data-type': t,
       'data-key': a.key || null,
-      'data-item': a.item || null,
       /* a lone checkbox/switch can't express "required" (false is a value) */
       required: type === 'radio' || !boxed ? a.required : null,
       readonly: !boxed && p.readOnly,
@@ -189,8 +188,8 @@
     var t = typeOf(p), opts = options(p);
     var current = a.value !== undefined ? a.value : p['default'];
     var html = '<select' + attr({
-      id: a.key ? null : idOf(path),
-      name: a.key ? null : path,
+      id: idOf(path),
+      name: path,
       'data-key': a.key || null,
       'data-type': t,
       required: a.required,
@@ -212,18 +211,12 @@
     return function (p, path, ctx, a) { return inputHTML(type, path, p, a); };
   }
 
-  /* one option per <label>, laid out inline when x-inline is true.
-     Shared by radios (single value) and checkboxes (array value). */
-  function optionGroup(p, type, path, a, isArrayGroup) {
+  /* one option per <label>, laid out inline when x-inline is true (radios) */
+  function optionGroup(p, type, path, a) {
     var opts = options(p), current = p['default'];
-    var defaults = isArr(current) ? current : [];
-    var itemType = typeOf(p.items || {});
     var html = '';
     for (var i = 0; i < opts.length; i++) {
-      html += '<label>' + inputHTML(type, path, p, isArrayGroup ? {
-        id: false, type: 'array', item: itemType,
-        value: opts[i].v, checked: has(defaults, opts[i].v)
-      } : {
+      html += '<label>' + inputHTML(type, path, p, {
         id: false, value: opts[i].v,
         checked: String(opts[i].v) === String(current),
         required: a && a.required && i === 0
@@ -246,8 +239,7 @@
     uri: typed('url'),
     checkbox: typed('checkbox'),
     select: function (p, path, ctx, a) { return selectHTML(path, p, a); },
-    radios: function (p, path, ctx, a) { return optionGroup(p, 'radio', path, a, false); },
-    checkboxes: function (p, path, ctx, a) { return optionGroup(p, 'checkbox', path, a, true); }
+    radios: function (p, path, ctx, a) { return optionGroup(p, 'radio', path, a); }
   };
 
   W['switch'] = function (p, path, ctx, a) {
@@ -310,7 +302,7 @@
         html += objectHTML(item, name, sub, ctx, title, value);
       } else {
         html += '<row><label>' + esc(title) + '</label>' +
-          control(item, sub, ctx, { key: name, value: value }) + '</row>';
+          control(item, sub, ctx, { key: name, value: value, checked: value === true }) + '</row>';
       }
     }
     return html;
@@ -415,12 +407,6 @@
     return el ? el.value : '';
   }
 
-  function push(obj, path, value) {
-    var list = get(obj, path);
-    if (!isArr(list)) { list = []; set(obj, path, list); }
-    list.push(value);
-  }
-
   /* x-hidden drops the key itself; its children attach to the parent key */
   function promote(name, hidden) {
     for (var again = true; again;) {
@@ -451,11 +437,7 @@
       if (!name || el.disabled || el.type === 'file') continue;
       if (!raw) { name = promote(name, hidden); if (!name) continue; }
       if (el.type === 'checkbox' || el.type === 'radio') {
-        if (type === 'array') {
-          /* a checkbox group always submits an array, even when nothing is ticked */
-          if (get(out, name) === undefined) set(out, name, []);
-          if (el.checked) push(out, name, cast(el.value, el.getAttribute('data-item')));
-        } else if (el.type === 'radio') {
+        if (el.type === 'radio') {
           if (el.checked) set(out, name, cast(el.value, type));
         } else {
           set(out, name, el.checked);

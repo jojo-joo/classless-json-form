@@ -1,11 +1,11 @@
-﻿# Mapping json-schema to HTML5 widget
+# Mapping json-schema to HTML5 widget
 
 - only support minimum keywords
 - using native HTML5 directive, no class
 - only validate `format` in backend, the frontend ignores it
 - `x-format` is required to pick a non-default widget: an `enum` alone does not
   turn a string/number into a `select`
-- `x-inline: true` is the only "inline" switch: it lays radios / checkboxes out
+- `x-inline: true` is the only "inline" switch: it lays radios out
   on one line
 
 | keyword | value   | x-format       | Form elements | description |
@@ -18,8 +18,8 @@
 | type    | number  | select         | select | Displays a dropdown select box populated from the `enum` array. `x-format` is required. |
 | type    | number  | radios         | input["radio"] | Renders as many radio inputs as values in the `enum` constraint. Labels customizable via `x-enum`; `x-inline` lays them out on one line. |
 | type    | number  | buttons        | button per enum value | One button per `enum` value (labelled by `x-enum`); clicking posts `{ "<property>": <value> }`. A single action button is just a one-element list (`enum: [v]`, `x-enum: ["Label"]`). `x-inline` lays them out on one line. Buttons are actions: they are not part of the form values. |
-| type    | array   |                | one row per item | Repeats the `items` widget once per entry of `default`; the row label comes from `x-title` (e.g. `{{name}}`). Use `x-format: "checkboxes"` for a multi-select checkbox group instead. |
-| type    | array   | checkboxes     | input["checkbox"] | Multi-select group: one checkbox per `items.enum` value, values collected as an array. `x-inline` lays them out on one line. |
+| type    | array   |                | one row per item | Repeats the `items` widget once per entry of `default`; the row label comes from `x-title` (e.g. `{{name}}`). A multi-select checkbox list is `items: { type: "boolean" }` with one entry per option. |
+
 | type    | object  |                | fieldset+legend | The standard widget that renders a fieldset. |
 | type    | object  | accordion      | details+summary | Puts `x-format: "accordion"` on the container object: each of its properties becomes one collapsible panel. Panels of a group share a `name`, so opening one closes the others; the first panel starts open. |
 | type    | string  |                | input["text"] | The standard text input that appears for string types without specific requirements. |
@@ -48,21 +48,22 @@
   `input[type="text"]`; add `x-format` to pick the widget, e.g.
   `{ "format": "email", "x-format": "email" }`.
 - `x-format` accepts the widget names of the table above (`switch`, `select`,
-  `range`, `buttons`, `radios`, `checkboxes`, `accordion`, `password`, `date`, `time`,
+  `range`, `buttons`, `radios`, `accordion`, `password`, `date`, `time`,
   `datetime-local`, `email`, `uri`, `color`, `file`).
 - `boolean` never gets the `required` attribute: `false` is a valid value and
   HTML would force the box to be checked.
-- Array checkboxes keep the type of `items.type`, so a checked `integer` option
-  is collected as a number.
+- An array only repeats its `items` template: one row per `default` entry
+  (`ir1` … `ir64`), so a checkbox list is `items: { type: "boolean" }` with one
+  entry per option.
 - `accordion` belongs to the container: put `x-format: "accordion"` on the
   object whose members should become panels. The object itself is not a panel,
   and each panel contains its member without a repeated label.
 - every rendered control is submitted except action buttons (they have no name):
-  empty text inputs are kept as `""`, a checkbox group always submits an array
-  (possibly `[]`), while disabled controls (hidden if/then branches) are skipped.
+  empty text inputs are kept as `""`, while disabled controls (hidden if/then
+  branches) are skipped.
 - `x-hidden: true` drops just that key from the submitted data (the widget stays on
   screen) and lifts its children one level up.
-- `x-inline` only affects `radios`, `checkboxes` and `buttons`; it has no
+- `x-inline` only affects `radios` and `buttons`; it has no
   effect on other widgets.
 
 ## Form actions
@@ -112,7 +113,7 @@ generated, because both titles already live in the tab and in the header.
 |---------|------------|---------|
 | `x-hidden` | any key | Defaults to `false`. When `true` the key itself is left out of the submitted values, while its children are attached to the **parent** key: a hidden `wifi` object submits `wifi_ssid` next to it instead of `wifi.wifi_ssid`. |
 | `x-layout` | form (root object, or each `prefixItems` item) | `aligned` (default), `stacked`, or `aligned-A-B`. `A`/`B` are CSS `<number [0,∞]>` track weights: non-negative, decimals allowed, `0` collapses the column (0–9 practical); `aligned-1-3` = `grid-template-columns: 1fr 3fr`. Invalid values fall back to `aligned` (1fr 2fr). `stacked` puts the label above the control. |
-| `x-inline` | `radios`, array checkboxes, `buttons` | `true` lays the options / buttons out on one line. |
+| `x-inline` | `radios`, `buttons` | `true` lays the options / buttons out on one line. |
 | `x-title` | `items` of a repeated array | Row title template; `{{name}}` is the key of the `default` entry, `{{index}}` its position (0-based). Without it the row shows the entry key. |
 | `x-enum` | next to `enum` (`items.enum` for arrays), `boolean` | Option labels: array parallel to `enum`, or `{ "value": "Label" }`. For an array put it inside `items`, beside `enum`, not on the array itself. For `boolean` select, `x-enum[0]` labels `false` and `x-enum[1]` labels `true`. |
 | `x-api-addr` | `x-format: "buttons"` | Relative API address. Put it once on the root schema; a field level value overrides it. A button POSTs only its own pair `{ "<property>": <value> }`, not the whole form, and the response is written next to the button. |
