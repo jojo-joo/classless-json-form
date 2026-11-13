@@ -39,20 +39,10 @@
 - `type: "null"` is not rendered for now.
 - field labels always use the **property name**: `title` is only read for whole
   forms (menu entry and document title), not for individual fields.
-- `select` must be explicit: a `string`/`number` schema with `enum` but without
-  `x-format: "select"` renders the default input (text / number).
 - `format` is a validation keyword: it is checked in the backend and ignored
   here. `{ "type": "string", "format": "email" }` alone still renders
   `input[type="text"]`; add `x-format` to pick the widget, e.g.
   `{ "format": "email", "x-format": "email" }`.
-- `x-format` accepts the widget names of the table above (`switch`, `select`,
-  `range`, `button`, `radios`, `accordion`, `password`, `date`, `time`,
-  `datetime-local`, `email`, `url`, `color`, `file`).
-- `boolean` never gets the `required` attribute: `false` is a valid value and
-  HTML would force the box to be checked.
-- An array only repeats its `items` template: one row per `default` entry
-  (`ir1` … `ir64`), so a checkbox list is `items: { type: "boolean" }` with one
-  entry per option.
 - `accordion` belongs to the container: put `x-format: "accordion"` on the
   object whose members should become panels. The object itself is not a panel,
   and each panel contains its member without a repeated label.

@@ -68,7 +68,7 @@
     if (p.items) return 'array';
     if (p.enum) {
       var v = p.enum[0];
-      if (typeof v === 'number') return v % 1 === 0 ? 'integer' : 'number';
+      if (typeof v === 'number') return 'number';
       if (typeof v === 'boolean') return 'boolean';
     }
     return 'string';
@@ -105,7 +105,7 @@
 
   function cast(value, type) {
     if (type === 'boolean') return value === true || value === 'true';
-    if (type === 'number' || type === 'integer') return value === '' ? undefined : Number(value);
+    if (type === 'number') return value === '' ? undefined : Number(value);
     return value;
   }
 
@@ -159,7 +159,7 @@
       min: p.minimum,
       max: p.maximum,
       step: type === 'number' || type === 'range'
-        ? (p.multipleOf || (t === 'integer' ? 1 : 'any')) : null,
+        ? (p.multipleOf || 'any') : null,
       minlength: p.minLength,
       maxlength: p.maxLength,
       pattern: p.pattern,
@@ -316,7 +316,7 @@
     var t = typeOf(p);
     if (t === 'boolean') return W.checkbox(p, path, ctx, a);
     if (t === 'array') return W.group(p, path, ctx, a);
-    if (t === 'number' || t === 'integer') {
+    if (t === 'number') {
       return (p.minimum !== undefined && p.maximum !== undefined)
         ? W.range(p, path, ctx, a) : W.number(p, path, ctx, a);
     }
@@ -488,7 +488,6 @@
     if (type === 'null') return value === null;
     if (type === 'array') return isArr(value);
     if (type === 'object') return isObj(value);
-    if (type === 'integer') return typeof value === 'number' && value % 1 === 0;
     return typeof value === type;
   }
 
