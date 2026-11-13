@@ -9,13 +9,13 @@
  *
  * Widget selection follows mapping.md. UI hints (unknown to validators, safe):
  *   title      row label; the key itself is only used in the submitted data
- *   x-format   switch | select | range | buttons | radios | accordion |
+ *   x-format   switch | select | range | button | radios | accordion |
  *              password | date | time | datetime-local | email | uri | color | file
- *              (buttons: one button per enum value, a single action is enum: [v])
+ *              (button: one action button, label x-enum[0], value default)
  *   x-layout   form layout: aligned (default) | stacked | aligned-A-B
  *   x-inline   true lays radios / buttons out on one line
  *   x-enum     option labels: array parallel to enum, or { "value": "Label" }
- *   x-api-addr POST target of x-format:buttons, once on the root schema
+ *   x-api-addr POST target of x-format:button, once on the root schema
  *   x-hidden   true drops the key from the submitted values; its children move up
  *   x-disabled, x-placeholder
  *   x-template / x-watch   computed read-only field
@@ -117,7 +117,7 @@
   /* --------------------------------------------------- 2. shared html pieces */
 
   /* enum + x-enum -> [{ v: value, l: label }] ; also serves boolean true/false
-     and array items (items.enum). Used by select, radios, buttons. */
+     and array items (items.enum). Used by select and radios. */
   function options(p) {
     var item = p.items || {};
     var list = p.enum || item.enum;
@@ -251,20 +251,19 @@
     return p['x-api-addr'] || (ctx && ctx.api) || '';
   }
 
-  /* buttons widget: one button per enum value, inline when x-inline.
-     A single action button is the degenerate case: enum: [value], x-enum: ["Label"]. */
-  W.buttons = function (p, path, ctx, a) {
-    var opts = options(p), key = (a && a.key) || path.split('.').pop(), type = typeOf(p), html = '';
-    for (var i = 0; i < opts.length; i++) {
-      html += button(opts[i].l, {
-        'data-api': apiAddr(p, ctx),
-        'data-key': key,
-        'data-value': String(opts[i].v),
-        'data-type': type
-      });
-    }
-    return '<fieldset data-buttons' + attr({ 'data-inline': p['x-inline'] === true }) + '>' +
-      html + '</fieldset>';
+  /* button widget: one action button; it posts { "<key>": <value> } */
+  W.button = function (p, path, ctx, a) {
+    a = a || {};
+    var key = a.key !== undefined ? a.key : path.split('.').pop();
+    var label = a.title || (p['x-enum'] && p['x-enum'][0]) || p['title'] || 'Submit';
+    var value = a.value !== undefined ? a.value
+      : (p['default'] !== undefined ? p['default'] : (p.enum ? p.enum[0] : 1));
+    return button(label, {
+      'data-api': apiAddr(p, ctx),
+      'data-key': key,
+      'data-value': String(value),
+      'data-type': typeOf(p)
+    });
   };
 
   /* {{path}} from a plain data object (used by x-title) */
@@ -277,13 +276,15 @@
   }
 
   /* array -> one row per default entry; x-title renders each row title.
-     x-inline: true keeps the scalar items on one line (checkbox list).
+     x-inline: true keeps the items on one line (checkbox list, button row).
      default: [{ "ir1": 0 }, { "ir2": 0 }, ...]  (key = row name, value = initial value) */
-  W.group = function (p, path, ctx) {
+  W.group = function (p, path, ctx, a) {
     var item = p.items || {}, entry = null;
     var list = isArr(p['default']) ? p['default'] : [];
     var tpl = item['x-title'] || p['x-title'] || '';
-    var inline = p['x-inline'] === true && typeOf(item) !== 'object';
+    var inline = p['x-inline'] === true;
+    /* nested: sits inside a row that already carries the label and the key */
+    var nested = a && a.key !== undefined;
     var html = '', cells = '';
     for (var i = 0; i < list.length; i++) {
       entry = list[i];
@@ -300,9 +301,10 @@
       var data = { name: name, value: value, index: i };
       var title = template(tpl, data) || name;
       var sub = path ? path + '[' + i + ']' : '[' + i + ']';
-      var ctl = control(item, sub, ctx, { key: name, value: value, checked: value === true });
+      var opts = { key: nested ? a.key : name, value: value, checked: value === true, title: title };
+      var ctl = control(item, sub, ctx, opts);
       if (inline) {
-        cells += '<label>' + ctl + esc(title) + '</label>';
+        cells += item['x-format'] === 'button' ? ctl : '<label>' + ctl + esc(title) + '</label>';
       } else if (typeOf(item) === 'object') {
         html += objectHTML(item, name, sub, ctx, title, value);
       } else {
@@ -310,8 +312,8 @@
       }
     }
     if (inline) {
-      return '<row><label>' + esc(p['title'] || '') + '</label>' +
-        '<fieldset data-inline>' + cells + '</fieldset></row>';
+      var fs = '<fieldset data-inline>' + cells + '</fieldset>';
+      return nested ? fs : '<row><label>' + esc(p['title'] || '') + '</label>' + fs + '</row>';
     }
     return html;
   };
@@ -621,8 +623,6 @@
     'form[data-layout=stacked] row{display:block}',
     'form[data-layout=stacked] row>label{display:block;text-align:left;margin-bottom:4px}',
     'fieldset[data-inline]{display:flex;flex-wrap:wrap;gap:.5em 1.25em}',
-    'fieldset[data-buttons]{display:flex;flex-direction:column;gap:4px}',
-    'fieldset[data-buttons][data-inline]{flex-direction:row;flex-wrap:wrap;gap:0 4px}',
     'fieldset legend{font-weight:600}',
     /* header: sticky, same content column as main */
     'body>header{position:sticky;top:0;z-index:9;height:56px;display:grid;' +

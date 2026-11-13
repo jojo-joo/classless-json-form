@@ -17,7 +17,7 @@
 | type    | number  | range          | input["range"] | Renders a range slider when `x-format` specified or `minimum` and `maximum` are defined. |
 | type    | number  | select         | select | Displays a dropdown select box populated from the `enum` array. `x-format` is required. |
 | type    | number  | radios         | input["radio"] | Renders as many radio inputs as values in the `enum` constraint. Labels customizable via `x-enum`; `x-inline` lays them out on one line. |
-| type    | number  | buttons        | button per enum value | One button per `enum` value (labelled by `x-enum`); clicking posts `{ "<property>": <value> }`. A single action button is just a one-element list (`enum: [v]`, `x-enum: ["Label"]`). `x-inline` lays them out on one line. Buttons are actions: they are not part of the form values. |
+| type    | number  | button         | button | One action button; clicking posts `{ "<property>": <value> }` to `x-api-addr`. Label from `x-enum[0]`, value from `default`; put it in an array with `x-inline: true` to get a row of buttons. |
 | type    | object  |                | fieldset+legend | The standard widget that renders a fieldset. |
 | type    | object  | accordion      | details+summary | Puts `x-format: "accordion"` on the container object: each of its properties becomes one collapsible panel. Panels of a group share a `name`, so opening one closes the others; the first panel starts open. |
 | type    | string  |                | input["text"] | The standard text input that appears for string types without specific requirements. |
@@ -46,7 +46,7 @@
   `input[type="text"]`; add `x-format` to pick the widget, e.g.
   `{ "format": "email", "x-format": "email" }`.
 - `x-format` accepts the widget names of the table above (`switch`, `select`,
-  `range`, `buttons`, `radios`, `accordion`, `password`, `date`, `time`,
+  `range`, `button`, `radios`, `accordion`, `password`, `date`, `time`,
   `datetime-local`, `email`, `uri`, `color`, `file`).
 - `boolean` never gets the `required` attribute: `false` is a valid value and
   HTML would force the box to be checked.
@@ -61,7 +61,7 @@
   branches) are skipped.
 - `x-hidden: true` drops just that key from the submitted data (the widget stays on
   screen) and lifts its children one level up.
-- `x-inline` only affects `radios` and `buttons`; it has no
+- `x-inline` only affects `radios` and arrays; it has no
   effect on other widgets.
 - Uses the `if` keyword to test a condition against the current value. When matched, `then` applies; otherwise `else` applies.
 
@@ -112,10 +112,10 @@ generated, because both titles already live in the tab and in the header.
 |---------|------------|---------|
 | `x-hidden` | any key | Defaults to `false`. When `true` the key itself is left out of the submitted values, while its children are attached to the **parent** key: a hidden `wifi` object submits `wifi_ssid` next to it instead of `wifi.wifi_ssid`. |
 | `x-layout` | form (root object, or each `prefixItems` item) | `aligned` (default), `stacked`, or `aligned-A-B`. `A`/`B` are CSS `<number [0,∞]>` track weights: non-negative, decimals allowed, `0` collapses the column (0–9 practical); `aligned-1-3` = `grid-template-columns: 1fr 3fr`. Invalid values fall back to `aligned` (1fr 2fr). `stacked` puts the label above the control. |
-| `x-inline` | `radios`, `buttons`, arrays | `true` lays the options / buttons out on one line; on an array the repeated items share one row (e.g. a checkbox list). |
+| `x-inline` | `radios`, arrays | `true` lays the options / buttons out on one line; on an array the repeated items share one row (e.g. a checkbox list). |
 | `x-title` | `items` of a repeated array | Row title template; `{{name}}` is the key of the `default` entry, `{{index}}` its position (0-based). Without it the row shows the entry key. |
 | `x-enum` | next to `enum` (`items.enum` for arrays), `boolean` | Option labels: array parallel to `enum`, or `{ "value": "Label" }`. For an array put it inside `items`, beside `enum`, not on the array itself. For `boolean` select, `x-enum[0]` labels `false` and `x-enum[1]` labels `true`. |
-| `x-api-addr` | `x-format: "buttons"` | Relative API address. Put it once on the root schema; a field level value overrides it. A button POSTs only its own pair `{ "<property>": <value> }`, not the whole form, and the response is written next to the button. |
+| `x-api-addr` | `x-format: "button"` | Relative API address. Put it once on the root schema; a field level value overrides it. A button POSTs only its own pair `{ "<property>": <value> }`, not the whole form, and the response is written next to the button. |
 | `x-disabled` | any leaf field | Adds the `disabled` attribute. |
 | `x-placeholder` | text-like inputs | Adds the `placeholder` attribute (plain `placeholder` also works). |
 | `x-template` | `string` | Computed read-only value, e.g. `"{{city}}, {{state}}"`. |
