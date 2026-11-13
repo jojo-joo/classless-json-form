@@ -13,7 +13,8 @@
   <main></main>
 
   <!-- demo schema, JSON Schema 2020-12 + x-* UI hints (see mapping.md) -->
-  <script type="application/json" id="schema">  {
+  <script type="application/json" id="schema">
+  {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://example.org/cjf/demo.schema.json",
     "title": "Classless JSON Form",
@@ -86,32 +87,16 @@
               "select": {
                 "type": "string",
                 "x-format": "select",
-                "enum": [
-                  "one",
-                  "two",
-                  "three"
-                ],
-                "x-enum": [
-                  "Option 1",
-                  "Option 2",
-                  "Option 3"
-                ],
+                "enum": ["one", "two", "three"],
+                "x-enum": ["Option 1", "Option 2", "Option 3"],
                 "default": "one",
                 "title": "Select"
               },
               "radios": {
                 "type": "string",
                 "x-format": "radios",
-                "enum": [
-                  "male",
-                  "female",
-                  "other"
-                ],
-                "x-enum": [
-                  "Male",
-                  "Female",
-                  "Other"
-                ],
+                "enum": ["male", "female", "other"],
+                "x-enum": ["Male", "Female", "Other"],
                 "default": "female",
                 "title": "Radios"
               },
@@ -119,16 +104,8 @@
                 "type": "string",
                 "x-format": "radios",
                 "x-inline": true,
-                "enum": [
-                  "s",
-                  "m",
-                  "l"
-                ],
-                "x-enum": [
-                  "Small",
-                  "Medium",
-                  "Large"
-                ],
+                "enum": ["s", "m", "l"],
+                "x-enum": ["Small", "Medium", "Large"],
                 "default": "m",
                 "title": "Radios inline"
               },
@@ -151,12 +128,8 @@
                 "x-api-addr": "/api/echo",
                 "default": "ABC-123",
                 "title": "Verify",
-                "enum": [
-                  "ABC-123"
-                ],
-                "x-enum": [
-                  "Verify"
-                ]
+                "enum": ["ABC-123"],
+                "x-enum": ["Verify"]
               }
             },
             "title": "String"
@@ -177,10 +150,7 @@
               "flag": {
                 "type": "boolean",
                 "x-format": "select",
-                "x-enum": [
-                  "Off",
-                  "On"
-                ],
+                "x-enum": ["Off", "On"],
                 "default": false,
                 "title": "Flag"
               }
@@ -213,16 +183,8 @@
               "priority": {
                 "type": "number",
                 "x-format": "select",
-                "enum": [
-                  1,
-                  2,
-                  3
-                ],
-                "x-enum": [
-                  "Low",
-                  "Medium",
-                  "High"
-                ],
+                "enum": [1, 2, 3],
+                "x-enum": ["Low", "Medium", "High"],
                 "default": 2,
                 "title": "Priority"
               },
@@ -232,26 +194,14 @@
                 "x-api-addr": "/api/check",
                 "default": 42,
                 "title": "Check",
-                "enum": [
-                  42
-                ],
-                "x-enum": [
-                  "Check"
-                ]
+                "enum": [42],
+                "x-enum": ["Check"]
               },
               "radios": {
                 "type": "number",
                 "x-format": "radios",
-                "enum": [
-                  1,
-                  2,
-                  3
-                ],
-                "x-enum": [
-                  "One",
-                  "Two",
-                  "Three"
-                ],
+                "enum": [1, 2, 3],
+                "x-enum": ["One", "Two", "Three"],
                 "default": 2,
                 "title": "Radios"
               },
@@ -259,16 +209,8 @@
                 "type": "number",
                 "x-format": "radios",
                 "x-inline": true,
-                "enum": [
-                  0,
-                  1,
-                  2
-                ],
-                "x-enum": [
-                  "Zero",
-                  "One",
-                  "Two"
-                ],
+                "enum": [0, 1, 2],
+                "x-enum": ["Zero", "One", "Two"],
                 "default": 1,
                 "title": "Radios inline"
               },
@@ -280,12 +222,8 @@
                 "minimum": 0,
                 "default": 0,
                 "title": "Scan",
-                "enum": [
-                  0
-                ],
-                "x-enum": [
-                  "Scan"
-                ]
+                "enum": [0],
+                "x-enum": ["Scan"]
               }
             },
             "title": "Number"
@@ -298,16 +236,8 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": [
-                    "art",
-                    "code",
-                    "music"
-                  ],
-                  "x-enum": [
-                    "Art",
-                    "Code",
-                    "Music"
-                  ]
+                  "enum": ["art", "code", "music"],
+                  "x-enum": ["Art", "Code", "Music"]
                 },
                 "default": [
                   "code"
@@ -320,16 +250,8 @@
                 "x-inline": true,
                 "items": {
                   "type": "string",
-                  "enum": [
-                    "a",
-                    "b",
-                    "c"
-                  ],
-                  "x-enum": [
-                    "A",
-                    "B",
-                    "C"
-                  ]
+                  "enum": ["a", "b", "c"],
+                  "x-enum": ["A", "B", "C"]
                 },
                 "default": [
                   "a"
@@ -342,16 +264,8 @@
                 "uniqueItems": true,
                 "items": {
                   "type": "integer",
-                  "enum": [
-                    1,
-                    2,
-                    3
-                  ],
-                  "x-enum": [
-                    "One",
-                    "Two",
-                    "Three"
-                  ]
+                  "enum": [1, 2, 3],
+                  "x-enum": ["One", "Two", "Three"]
                 },
                 "default": [
                   2
@@ -369,13 +283,7 @@
                     "type": {
                       "type": "string",
                       "title": "Type",
-                      "enum": [
-                        "cat",
-                        "dog",
-                        "bird",
-                        "reptile",
-                        "other"
-                      ]
+                      "enum": ["cat", "dog", "bird", "reptile", "other"]
                     },
                     "age": {
                       "type": "number",
@@ -517,7 +425,8 @@
         "x-layout": "stacked"
       }
     ]
-  }</script>
+  }
+  </script>
 
   <script src="cjf.js"></script>
   <script>
