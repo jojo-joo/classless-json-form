@@ -292,6 +292,7 @@
           },
           "Array": {
             "type": "object",
+            "title": "Array Examples",
             "properties": {
               "tags": {
                 "type": "array",
@@ -301,13 +302,13 @@
                     "art",
                     "code",
                     "music"
+                  ],
+                  "x-enum": [
+                    "Art",
+                    "Code",
+                    "Music"
                   ]
                 },
-                "x-enum": [
-                  "Art",
-                  "Code",
-                  "Music"
-                ],
                 "default": [
                   "code"
                 ],
@@ -323,13 +324,13 @@
                     "a",
                     "b",
                     "c"
+                  ],
+                  "x-enum": [
+                    "A",
+                    "B",
+                    "C"
                   ]
                 },
-                "x-enum": [
-                  "A",
-                  "B",
-                  "C"
-                ],
                 "default": [
                   "a"
                 ],
@@ -345,13 +346,13 @@
                     1,
                     2,
                     3
+                  ],
+                  "x-enum": [
+                    "One",
+                    "Two",
+                    "Three"
                   ]
                 },
-                "x-enum": [
-                  "One",
-                  "Two",
-                  "Three"
-                ],
                 "default": [
                   2
                 ],
@@ -384,15 +385,20 @@
                 },
                 "default": [
                   {
-                    "Walter": {"type": "dog", "age": 5}
+                    "Walter": {
+                      "type": "dog",
+                      "age": 5
+                    }
                   },
                   {
-                    "Kitty": {"type": "cat", "age": 3}
+                    "Kitty": {
+                      "type": "cat",
+                      "age": 3
+                    }
                   }
                 ]
               }
-            },
-            "title": "Array"
+            }
           },
           "Object": {
             "type": "object",

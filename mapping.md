@@ -114,7 +114,7 @@ generated, because both titles already live in the tab and in the header.
 | `x-layout` | form (root object, or each `prefixItems` item) | `aligned` (default), `stacked`, or `aligned-A-B`. `A`/`B` are CSS `<number [0,∞]>` track weights: non-negative, decimals allowed, `0` collapses the column (0–9 practical); `aligned-1-3` = `grid-template-columns: 1fr 3fr`. Invalid values fall back to `aligned` (1fr 2fr). `stacked` puts the label above the control. |
 | `x-inline` | `radios`, array checkboxes, `buttons` | `true` lays the options / buttons out on one line. |
 | `x-title` | `items` of a repeated array | Row title template; `{{name}}` is the key of the `default` entry, `{{index}}` its position (0-based). Without it the row shows the entry key. |
-| `x-enum` | `enum`, `items.enum`, `boolean` | Option labels: array parallel to `enum`, or `{ "value": "Label" }`. For `boolean` select, `x-enum[0]` labels `false` and `x-enum[1]` labels `true`. |
+| `x-enum` | next to `enum` (`items.enum` for arrays), `boolean` | Option labels: array parallel to `enum`, or `{ "value": "Label" }`. For an array put it inside `items`, beside `enum`, not on the array itself. For `boolean` select, `x-enum[0]` labels `false` and `x-enum[1]` labels `true`. |
 | `x-api-addr` | `x-format: "buttons"` | Relative API address. Put it once on the root schema; a field level value overrides it. A button POSTs only its own pair `{ "<property>": <value> }`, not the whole form, and the response is written next to the button. |
 | `x-disabled` | any leaf field | Adds the `disabled` attribute. |
 | `x-placeholder` | text-like inputs | Adds the `placeholder` attribute (plain `placeholder` also works). |
