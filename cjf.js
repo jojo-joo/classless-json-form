@@ -109,10 +109,8 @@
     return value;
   }
 
-  /* field labels are always the property name (schema "title" is only used
-     for whole forms: menu entries and the document title) */
   /* "title" is the row label; the property key is only used in the submitted data */
-  function labelOf(p) { return p['title'] || ''; }
+  function labelOf(p, title) { return title === undefined ? (p['title'] || '') : title; }
 
   /* --------------------------------------------------- 2. shared html pieces */
 
@@ -252,10 +250,17 @@
     });
   };
 
-  /* {{path}} from a plain data object (used by x-title) */
+  /* {{path}} placeholders; fn(key, all) returns the replacement text */
+  function fill(str, fn) {
+    return String(str).replace(/\{\{\s*([\w.-]+)\s*\}\}/g, function (all, key) {
+      return fn(key, all);
+    });
+  }
+
+  /* x-title: values come from the row model */
   function template(str, data) {
     if (!str) return '';
-    return String(str).replace(/\{\{\s*([\w.-]+)\s*\}\}/g, function (all, key) {
+    return fill(str, function (key) {
       var v = data ? get(data, key) : undefined;
       return v === undefined || v === null ? '' : String(v);
     });
@@ -294,12 +299,12 @@
       } else if (typeOf(item) === 'object') {
         html += objectHTML(item, name, sub, ctx, title, value);
       } else {
-        html += '<row><label>' + esc(title) + '</label>' + ctl + '</row>';
+        html += rowWrap(title, ctl);
       }
     }
     if (inline) {
       var fs = '<fieldset data-inline>' + cells + '</fieldset>';
-      return nested ? fs : '<row><label>' + esc(p['title'] || '') + '</label>' + fs + '</row>';
+      return nested ? fs : rowWrap(p['title'] || '', fs);
     }
     return html;
   };
@@ -330,36 +335,40 @@
     return inputHTML('text', path, p, { type: 'string' });
   }
 
-  function rowHTML(p, name, path, req, ctx, noLabel, title, value) {
-    var a = { required: req };
-    if (value !== undefined) a.value = value;
-    return '<row><label>' + (noLabel ? '' : esc(title === undefined ? labelOf(p) : title)) + '</label>' +
-      control(p, path, ctx, a) + '</row>';
+  function rowWrap(label, ctl) {
+    return '<row><label>' + esc(label) + '</label>' + ctl + '</row>';
   }
 
-  /* one property: object -> fieldset, repeated array -> many rows, else one row */
-  function blockHTML(p, name, path, req, ctx, value) {
-    if (typeOf(p) === 'object') return objectHTML(p, name, path, ctx, undefined, value);
-    if (typeOf(p) === 'array' && !(p['x-format'] && W[p['x-format']])) return W.group(p, path, ctx);
-    return rowHTML(p, name, path, req, ctx, false, undefined, value);
+  function rowHTML(p, name, path, req, ctx, noLabel, title, value) {
+    var a = { required: req };
+    if (value !== undefined) { a.value = value; a.checked = value === true; }
+    return rowWrap(noLabel ? '' : labelOf(p, title), control(p, path, ctx, a));
+  }
+
+  /* one property: object -> fieldset, repeated array -> many rows, else one row.
+     noLabel: inside an accordion panel, whose summary already carries the title. */
+  function blockHTML(p, name, path, req, ctx, value, noLabel) {
+    var t = typeOf(p);
+    if (t === 'object') {
+      return noLabel ? fields(p, path, ctx, value)
+        : objectHTML(p, name, path, ctx, undefined, value);
+    }
+    if (t === 'array' && !(p['x-format'] && W[p['x-format']])) return W.group(p, path, ctx);
+    return rowHTML(p, name, path, req, ctx, noLabel, undefined, value);
   }
 
   /* object -> fieldset (+legend only when it has a title) */
   function objectHTML(p, name, path, ctx, title, value) {
-    var label = title === undefined ? p['title'] : title;
+    var label = labelOf(p, title);
     var legend = label ? '<legend>' + esc(label) + '</legend>' : '';
     return '<fieldset>' + legend + fields(p, path, ctx, value) + '</fieldset>';
   }
 
   /* one property rendered as an accordion panel (details+summary) */
   function panelHTML(p, name, path, req, ctx, group, open, value) {
-    var body = typeOf(p) === 'object'
-      ? fields(p, path, ctx, value)
-      : typeOf(p) === 'array' && !(p['x-format'] && W[p['x-format']])
-        ? W.group(p, path, ctx)
-        : rowHTML(p, name, path, req, ctx, true);
     return '<details' + (open ? ' open' : '') + attr({ name: group }) + '>' +
-      '<summary>' + esc(labelOf(p)) + '</summary>' + body + '</details>';
+      '<summary>' + esc(labelOf(p)) + '</summary>' +
+      blockHTML(p, name, path, req, ctx, value, true) + '</details>';
   }
 
   /* properties + if/then/else of one object schema.
@@ -497,7 +506,7 @@
     for (i = 0; i < ctx.watch.length; i++) {
       var w = ctx.watch[i], el = q('[name="' + w.path + '"]', form);
       if (!el) continue;
-      el.value = w.tpl.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, function (all, key) {
+      el.value = fill(w.tpl, function (key, all) {
         return w.map[key] ? val(w.map[key], form) : all;
       });
     }
@@ -661,10 +670,10 @@
 
   function chrome(root, list) {
     var parent = root.parentNode || doc.body;
-    var old = q('#cjf-header');
-    if (old && old.parentNode) old.parentNode.removeChild(old);
-    old = q('#cjf-nav');
-    if (old && old.parentNode) old.parentNode.removeChild(old);
+    each(['#cjf-header', '#cjf-nav'], function (i, sel) {
+      var old = q(sel);
+      if (old && old.parentNode) old.parentNode.removeChild(old);
+    });
 
     var header = doc.createElement('header');
     header.id = 'cjf-header';
