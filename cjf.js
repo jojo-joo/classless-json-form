@@ -307,7 +307,7 @@
       var title = template(tpl, data) || name;
       var sub = path ? path + '[' + i + ']' : '[' + i + ']';
       if (typeOf(item) === 'object') {
-        html += objectHTML(item, name, sub, ctx, title);
+        html += objectHTML(item, name, sub, ctx, title, value);
       } else {
         html += '<row><label>' + esc(title) + '</label>' +
           control(item, sub, ctx, { key: name, value: value }) + '</row>';
@@ -342,29 +342,31 @@
     return inputHTML('text', path, p, { type: 'string' });
   }
 
-  function rowHTML(p, name, path, req, ctx, noLabel, title) {
+  function rowHTML(p, name, path, req, ctx, noLabel, title, value) {
+    var a = { required: req };
+    if (value !== undefined) a.value = value;
     return '<row><label>' + (noLabel ? '' : esc(title === undefined ? labelOf(p) : title)) + '</label>' +
-      control(p, path, ctx, { required: req }) + '</row>';
+      control(p, path, ctx, a) + '</row>';
   }
 
   /* one property: object -> fieldset, repeated array -> many rows, else one row */
-  function blockHTML(p, name, path, req, ctx) {
-    if (typeOf(p) === 'object') return objectHTML(p, name, path, ctx);
+  function blockHTML(p, name, path, req, ctx, value) {
+    if (typeOf(p) === 'object') return objectHTML(p, name, path, ctx, undefined, value);
     if (typeOf(p) === 'array' && !(p['x-format'] && W[p['x-format']])) return W.group(p, path, ctx);
-    return rowHTML(p, name, path, req, ctx);
+    return rowHTML(p, name, path, req, ctx, false, undefined, value);
   }
 
   /* object -> fieldset (+legend only when it has a title) */
-  function objectHTML(p, name, path, ctx, title) {
+  function objectHTML(p, name, path, ctx, title, value) {
     var label = title === undefined ? p['title'] : title;
     var legend = label ? '<legend>' + esc(label) + '</legend>' : '';
-    return '<fieldset>' + legend + fields(p, path, ctx) + '</fieldset>';
+    return '<fieldset>' + legend + fields(p, path, ctx, value) + '</fieldset>';
   }
 
   /* one property rendered as an accordion panel (details+summary) */
-  function panelHTML(p, name, path, req, ctx, group, open) {
+  function panelHTML(p, name, path, req, ctx, group, open, value) {
     var body = typeOf(p) === 'object'
-      ? fields(p, path, ctx)
+      ? fields(p, path, ctx, value)
       : typeOf(p) === 'array' && !(p['x-format'] && W[p['x-format']])
         ? W.group(p, path, ctx)
         : rowHTML(p, name, path, req, ctx, true);
@@ -374,7 +376,7 @@
 
   /* properties + if/then/else of one object schema.
      x-format: accordion on this object turns its properties into panels. */
-  function fields(p, path, ctx) {
+  function fields(p, path, ctx, vals) {
     var accordion = p['x-format'] === 'accordion';
     /* one group per form, so panels of different forms stay independent */
     var group = 'cjf-accordion-' + (ctx.uid || 0) + '-' + (path || 'root');
@@ -387,10 +389,11 @@
       var subPath = path ? path + '.' + name : name;
       var req = has(p.required, name);
       if (sub['x-hidden'] === true) ctx.hidden.push(subPath);
+      var val = vals && isObj(vals) && vals[name] !== undefined ? vals[name] : undefined;
       if (!accordion) {
-        html += blockHTML(sub, name, subPath, req, ctx);
+        html += blockHTML(sub, name, subPath, req, ctx, val);
       } else {
-        html += panelHTML(sub, name, subPath, req, ctx, group, first);
+        html += panelHTML(sub, name, subPath, req, ctx, group, first, val);
         first = false;
       }
     });
@@ -449,6 +452,8 @@
       if (!raw) { name = promote(name, hidden); if (!name) continue; }
       if (el.type === 'checkbox' || el.type === 'radio') {
         if (type === 'array') {
+          /* a checkbox group always submits an array, even when nothing is ticked */
+          if (get(out, name) === undefined) set(out, name, []);
           if (el.checked) push(out, name, cast(el.value, el.getAttribute('data-item')));
         } else if (el.type === 'radio') {
           if (el.checked) set(out, name, cast(el.value, type));
@@ -457,7 +462,6 @@
         }
         continue;
       }
-      if (el.value === '') continue;
       set(out, name, cast(el.value, type));
     }
 

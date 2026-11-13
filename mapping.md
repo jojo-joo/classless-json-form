@@ -57,6 +57,9 @@
 - `accordion` belongs to the container: put `x-format: "accordion"` on the
   object whose members should become panels. The object itself is not a panel,
   and each panel contains its member without a repeated label.
+- every rendered control is submitted except action buttons (they have no name):
+  empty text inputs are kept as `""`, a checkbox group always submits an array
+  (possibly `[]`), while disabled controls (hidden if/then branches) are skipped.
 - `x-hidden: true` drops just that key from the submitted data (the widget stays on
   screen) and lifts its children one level up.
 - `x-inline` only affects `radios`, `checkboxes` and `buttons`; it has no
