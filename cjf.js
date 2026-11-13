@@ -12,6 +12,7 @@
  *   x-format   switch | select | range | buttons | radios | table | accordion |
  *              password | date | time | datetime-local | email | uri | color | file
  *              (buttons: one button per enum value, a single action is enum: [v])
+ *   x-layout   form layout: aligned (default) | stacked | aligned-A-B
  *   x-inline   true lays radios / checkboxes / buttons out on one line
  *   x-enum     option labels: array parallel to enum, or { "value": "Label" }
  *   x-api-addr POST target of x-format:buttons, once on the root schema
@@ -630,7 +631,7 @@
     '@media (min-width:768px){body>main,body>header,body>footer{width:min(100% - 48px,720px)}}',
     '@media (min-width:1024px){body>main,body>header,body>footer{width:min(50%,2048px)}}',
     /* one property per row */
-    'row{display:grid;grid-template-columns:1fr 2fr;column-gap:16px;margin:4px 0 4px;align-items:center}',
+    'row{display:grid;grid-template-columns:var(--cjf-cols,1fr 2fr);column-gap:16px;margin:4px 0 4px;align-items:center}',
     /* form actions live outside the rows, so they span the whole form */
     '[data-actions]{display:flex;flex-direction:column;gap:.5rem;margin:.5rem 0}',
     '[data-actions]>input{width:100%}',
@@ -640,6 +641,8 @@
     'row>div{overflow-x:auto}',
     'row table{min-width:max-content}',
     'row th,row td{white-space:nowrap}',
+    'form[data-layout=stacked] row:not([data-table-row]){display:block}',
+    'form[data-layout=stacked] row:not([data-table-row])>label{display:block;text-align:left;margin-bottom:4px}',
     'row[data-table-row]{display:block}',
     'row[data-table-row]>label{display:block;text-align:left;margin-bottom:4px}',
     'fieldset[data-inline]{display:flex;flex-wrap:wrap;gap:.5em 1.25em}',
@@ -756,6 +759,15 @@
     };
   }
 
+  /* form layout: x-layout = aligned (default) | stacked | aligned-A-B */
+  function formLayout(p) {
+    var xf = p['x-layout'] || '';
+    var m = /^aligned-(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)$/.exec(xf);
+    if (xf === 'stacked') return { layout: 'stacked', cols: '' };
+    if (m) return { layout: 'aligned', cols: m[1] + 'fr ' + m[2] + 'fr' };
+    return { layout: 'aligned', cols: '' };
+  }
+
   /* root object -> one form; root array -> one form per item schema */
   function formList(schema) {
     var list = [], i;
@@ -807,8 +819,13 @@
     for (i = 0; i < list.length; i++) {
       var ctx = { watch: [], conds: [], tables: {}, hidden: [], request: options.request || null, uid: i, api: api };
       ctxs.push(ctx);
+      var L = formLayout(list[i].schema);
+      var st = [];
+      if (i !== 0) st.push('display:none');
+      if (L.cols) st.push('--cjf-cols:' + L.cols);
       html += '<form id="cjf-form-' + i + '" data-title="' + esc(list[i].title) + '"' +
-        (i === 0 ? '' : ' style="display:none"') + '>' +
+        ' data-layout="' + L.layout + '"' +
+        (st.length ? ' style="' + st.join(';') + '"' : '') + '>' +
         (typeOf(list[i].schema) === 'object' ? fields(list[i].schema, '', ctx) : '') +
         actionsHTML(list[i].schema) +
         '<pre hidden></pre>' +
