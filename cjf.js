@@ -140,13 +140,8 @@
     return l === undefined ? String(value) : l;
   }
 
-  /* one button builder: api buttons and action buttons */
-  function button(text, map) {
-    return '<button type="button"' + attr(map) + '>' + esc(text) + '</button>';
-  }
-
   /* one input builder: text/number/range/color/file/date/time/email/url/
-     checkbox/radio, incl. every native validation attribute */
+     checkbox/radio/button, incl. every native validation attribute */
   function inputHTML(type, path, p, a) {
     a = a || {};
     var t = a.type || typeOf(p);
@@ -154,12 +149,14 @@
     var map = {
       type: type,
       id: a.id === false ? null : idOf(path),
-      name: path,
+      name: a.noName ? null : path,
       'data-type': t,
       'data-key': a.key || null,
+      'data-api': a.api || null,
+      'data-value': a.post !== undefined ? String(a.post) : null,
       /* a lone checkbox/switch can't express "required" (false is a value) */
-      required: type === 'radio' || !boxed ? a.required : null,
-      readonly: !boxed && p.readOnly,
+      required: type === 'button' ? null : (type === 'radio' || !boxed ? a.required : null),
+      readonly: !boxed && type !== 'button' && p.readOnly,
       disabled: p['x-disabled'] || a.disabled,
       min: p.minimum,
       max: p.maximum,
@@ -251,18 +248,16 @@
     return p['x-api-addr'] || (ctx && ctx.api) || '';
   }
 
-  /* button widget: one action button; it posts { "<key>": <value> } */
+  /* button widget: one action button (input[type=button]); it posts { "<key>": <value> } */
   W.button = function (p, path, ctx, a) {
     a = a || {};
-    var key = a.key !== undefined ? a.key : path.split('.').pop();
     var label = a.title || (p['x-enum'] && p['x-enum'][0]) || p['title'] || 'Submit';
-    var value = a.value !== undefined ? a.value
+    var post = a.value !== undefined ? a.value
       : (p['default'] !== undefined ? p['default'] : (p.enum ? p.enum[0] : 1));
-    return button(label, {
-      'data-api': apiAddr(p, ctx),
-      'data-key': key,
-      'data-value': String(value),
-      'data-type': typeOf(p)
+    return inputHTML('button', path, p, {
+      id: false, noName: true, required: false,
+      key: a.key !== undefined ? a.key : path.split('.').pop(),
+      api: apiAddr(p, ctx), post: post, value: label
     });
   };
 
@@ -444,7 +439,7 @@
     var fields = qa('input, select, textarea', form);
     for (i = 0; i < fields.length; i++) {
       var el = fields[i], name = el.name, type = el.getAttribute('data-type');
-      if (!name || el.disabled || el.type === 'file') continue;
+      if (!name || el.disabled || el.type === 'file' || el.type === 'button') continue;
       if (!raw) { name = promote(name, hidden); if (!name) continue; }
       if (el.type === 'checkbox' || el.type === 'radio') {
         if (el.type === 'radio') {
